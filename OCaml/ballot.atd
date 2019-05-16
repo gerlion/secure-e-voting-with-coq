@@ -1,0 +1,14 @@
+type t1 <ocaml from="voter" t="voter"> = abstract
+    (*
+      Imports type t defined in file part1.atd.
+      The local name is t1. Because the local name (t1) is different from the
+      original name (t), we must specify the original name using t=.
+    *)
+
+type ballot = {
+  ?cast_at : string option;
+  ?vote : t1 option;
+  ?vote_hash : string option;
+  voter_hash : string;
+  voter_uuid : string;
+}

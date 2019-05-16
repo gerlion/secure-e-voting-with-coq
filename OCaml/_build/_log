@@ -1,0 +1,29 @@
+### Starting build.
+# Target: voter_j.ml.depends, tags: { bin_annot, debug, extension:ml, file:voter_j.ml, ocaml, ocamldep, package(core), package(yojson,atdgen), ppx(ppx-jane -as-ppx), quiet, short_paths, thread }
+ocamlfind ocamldep -package yojson,atdgen -package core -ppx 'ppx-jane -as-ppx' -modules voter_j.ml > voter_j.ml.depends
+# Target: voter_j.mli.depends, tags: { bin_annot, debug, extension:mli, file:voter_j.mli, ocaml, ocamldep, package(core), package(yojson,atdgen), ppx(ppx-jane -as-ppx), quiet, short_paths, thread }
+ocamlfind ocamldep -package yojson,atdgen -package core -ppx 'ppx-jane -as-ppx' -modules voter_j.mli > voter_j.mli.depends
+# Target: voter_t.mli.depends, tags: { bin_annot, debug, extension:mli, file:voter_t.mli, ocaml, ocamldep, package(core), package(yojson,atdgen), ppx(ppx-jane -as-ppx), quiet, short_paths, thread }
+ocamlfind ocamldep -package yojson,atdgen -package core -ppx 'ppx-jane -as-ppx' -modules voter_t.mli > voter_t.mli.depends
+# Target: voter_t.cmi, tags: { bin_annot, byte, compile, debug, extension:mli, file:voter_t.mli, interf, ocaml, package(core), package(yojson,atdgen), ppx(ppx-jane -as-ppx), quiet, short_paths, thread }
+ocamlfind ocamlc -c -w A-4-33-40-41-42-43-34-44 -strict-sequence -g -bin-annot -short-paths -thread -package yojson,atdgen -package core -ppx 'ppx-jane -as-ppx' -o voter_t.cmi voter_t.mli
+# Target: voter_j.cmi, tags: { bin_annot, byte, compile, debug, extension:mli, file:voter_j.mli, interf, ocaml, package(core), package(yojson,atdgen), ppx(ppx-jane -as-ppx), quiet, short_paths, thread }
+ocamlfind ocamlc -c -w A-4-33-40-41-42-43-34-44 -strict-sequence -g -bin-annot -short-paths -thread -package yojson,atdgen -package core -ppx 'ppx-jane -as-ppx' -o voter_j.cmi voter_j.mli
+# Target: voter_t.ml.depends, tags: { bin_annot, debug, extension:ml, file:voter_t.ml, ocaml, ocamldep, package(core), package(yojson,atdgen), ppx(ppx-jane -as-ppx), quiet, short_paths, thread }
+ocamlfind ocamldep -package yojson,atdgen -package core -ppx 'ppx-jane -as-ppx' -modules voter_t.ml > voter_t.ml.depends
+# Target: voter_t.cmx, tags: { bin_annot, compile, debug, extension:cmx, extension:ml, file:voter_t.cmx, file:voter_t.ml, implem, native, ocaml, package(core), package(yojson,atdgen), ppx(ppx-jane -as-ppx), quiet, short_paths, thread }
+ocamlfind ocamlopt -c -w A-4-33-40-41-42-43-34-44 -strict-sequence -g -bin-annot -short-paths -thread -package yojson,atdgen -package core -ppx 'ppx-jane -as-ppx' -o voter_t.cmx voter_t.ml
+# Target: voter_j.cmx, tags: { bin_annot, compile, debug, extension:cmx, extension:ml, file:voter_j.cmx, file:voter_j.ml, implem, native, ocaml, package(core), package(yojson,atdgen), ppx(ppx-jane -as-ppx), quiet, short_paths, thread }
+ocamlfind ocamlopt -c -w A-4-33-40-41-42-43-34-44 -strict-sequence -g -bin-annot -short-paths -thread -package yojson,atdgen -package core -ppx 'ppx-jane -as-ppx' -o voter_j.cmx voter_j.ml
++ ocamlfind ocamlopt -c -w A-4-33-40-41-42-43-34-44 -strict-sequence -g -bin-annot -short-paths -thread -package yojson,atdgen -package core -ppx 'ppx-jane -as-ppx' -o voter_j.cmx voter_j.ml
+File "voter_j.ml", line 518, characters 4-16:
+Warning 32: unused value string_of__2.
+File "voter_j.ml", line 534, characters 4-16:
+Warning 32: unused value string_of__3.
+File "voter_j.ml", line 550, characters 4-16:
+Warning 32: unused value string_of__1.
+File "voter_j.ml", line 758, characters 4-16:
+Warning 32: unused value string_of__4.
+# Target: voter_j.native, tags: { bin_annot, debug, dont_link_with, extension:native, file:voter_j.native, link, native, ocaml, package(core), package(yojson,atdgen), ppx(ppx-jane -as-ppx), program, quiet, short_paths, thread }
+ocamlfind ocamlopt -linkpkg -g -thread -package yojson,atdgen -package core voter_t.cmx voter_j.cmx -o voter_j.native
+# Compilation successful.

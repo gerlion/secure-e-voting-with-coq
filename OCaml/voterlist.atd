@@ -1,0 +1,5 @@
+type voterid = {
+  alias : string;
+  election_uuid : string;
+  uuid : string;
+}
