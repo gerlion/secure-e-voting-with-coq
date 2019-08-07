@@ -1,3 +1,8 @@
+# Secure E-Voting with Coq
+This repository contains the code associated with the CCS 2019 submission
+"Verified code for verifying elections" by Thomas Haines, Rajeev 
+Gore and Mukesh Tiwari.
+
 # Verified code for verifiable elections
 Both the Coq and OCaml code come with makefiles 
 # Dependencies 
@@ -10,5 +15,9 @@ Running make Extraction.vo will prompt Coq to extract the libaries
 # OCaml Code
 Running make compile will prompt OCaml to compile  
 Running make run will will verify the election data for Helios IACR 2018  
-### Note this code is being made available as part of CCS 2019 submission
-the authors' names will be posted at a later date
+
+## Note: 
+This is not the development repo for the ongoing work.  Place contact 
+Thomas Haines (thomas.haines@ntnu.no) with any questions or for
+the latest version.
+
