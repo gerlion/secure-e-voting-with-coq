@@ -8,7 +8,7 @@ Gore and Mukesh Tiwari.
 This repo contains the first steps in ongoing work to have machine checked
 code for the cryptographic primitives that are used in e-voting.  In addition,
 the work extends to proving that using the primitives in a certain way suffices
-for the integrity of the tallying process (which is commonly called universal 
+for the integrity of the tallying process up to some specific limitations (which is commonly called universal 
 verifiability).
 
 This tool is useful for getting confidence in the validity of the verification
