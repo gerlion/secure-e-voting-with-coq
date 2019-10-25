@@ -1,10 +1,10 @@
 # compile coqprime file
 prime : 
-	make -C coqprime
+	make -C Coqprime
 
 #all .vo file dependes on .v file
 %.vo : %.v
-	coqc -R coqprime/src/Coqprime Coqprime $*.v
+	coqc -R Coqprime/src/Coqprime Coqprime $*.v
 
 #compile primeQ
 primeQ.vo : prime primeQ.v
@@ -35,4 +35,4 @@ Extraction.vo : helios.vo Extraction.v
 
 #run clean
 clean :
-	rm -rf *.vo *.glob && cd coqprime && make clean
+	rm -rf *.vo *.glob && cd Coqprime && make clean
