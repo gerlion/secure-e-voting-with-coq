@@ -8,7 +8,6 @@ Require Import Ring.
 Require Import Field.
 Require Import Coqprime.elliptic.GZnZ.
 Require Import Specif.
-Require Import ProofIrrelevance.
 Require Import Coq.PArith.Pnat.
 Require Import Coq.ZArith.Znat.
 Require Import ArithRing.
@@ -56,11 +55,10 @@ Proof.
 Qed. 
 
 (* The base field *)
-
 Theorem znz_bij: forall P : Z, forall a b : (znz P), a = b <-> val P a = val P b.
   split. intros; subst; auto.
    intros. destruct a, b. cbn in *.
-    subst. f_equal. apply UIP.
+    subst. f_equal. apply eq_proofs_unicity_on. apply Z.eq_decidable.
 Qed.
 
 Definition Fp : Set := (znz P).
@@ -495,6 +493,19 @@ Definition op (a:G)(b: F) : G.
   unfold inQSubGroup in IHn. rewrite binary_power_ok in IHn. apply IHn.
 Defined.
 
+Lemma Fp_decidable : forall (a b : Fp), Decidable.decidable (a = b).
+Proof.
+  intros [a ?] [b ?].
+  destruct (Z.eq_decidable a b) as [?|H].
+  + left.
+    subst; f_equal.
+    apply eq_proofs_unicity_on.
+    apply Z.eq_decidable.
+  + right.
+    intro Heq; inversion Heq.
+    apply H; assumption.
+Qed.
+
 (* We first prove equivlance *)
 Lemma eq_proj:
   forall a b : G,
@@ -503,7 +514,7 @@ Proof.
   split; intros.
   + rewrite H. auto.
   + destruct a, b. cbn in *.
-    subst. f_equal. apply UIP.
+    subst. f_equal. apply eq_proofs_unicity_on. apply Fp_decidable.
 Qed.
 
 Lemma Gdot_FpMul_eq :
