@@ -1,0 +1,10 @@
+.*.aux
+*.vo
+*.glob
+.lia.cache
+*.cmi
+*.cmx
+*.o
+Coqprime/.coqdeps.d
+Coqprime/Makefile.conf
+OCaml/a.out
