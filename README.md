@@ -28,12 +28,16 @@ Running make Extraction.vo will prompt Coq to extract the libaries
 Running make compile will prompt OCaml to compile  
 Running make run will will verify the election data for Helios IACR 2018  
 
+## Suggested runtime optimisations
+1. Replace the extracted implemention of modulo for integers with Big_int.mod_big_int.
+2. Replace the extracted implemention of multiplicative inverse with Fermat's litte theorem.
+
 ## Note: 
 This is not the development repo for the ongoing work.  Place contact 
 Thomas Haines (thomas.haines@ntnu.no) with any questions or for
 the latest version.
 
-## Contributors :
+## External Contributors :
 
 Stéphane Glondu 
 
