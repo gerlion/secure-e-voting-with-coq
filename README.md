@@ -33,3 +33,8 @@ This is not the development repo for the ongoing work.  Place contact
 Thomas Haines (thomas.haines@ntnu.no) with any questions or for
 the latest version.
 
+## Contributors :
+
+Stéphane Glondu 
+
+
