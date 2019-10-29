@@ -11,7 +11,7 @@ Require Import Specif.
 Require Import Coq.PArith.Pnat.
 Require Import Coq.ZArith.Znat.
 Require Import ArithRing.
-Require Import Psatz. 
+Require Import Lia.
 Require Import Recdef.
 Require Import Div2.
 Require Import Coq.Arith.Wf_nat.
