@@ -32,6 +32,19 @@ type 'a sig0 = 'a
 
 
 
+(** val pred : nat -> nat **)
+
+let pred n = match n with
+| O -> n
+| S u -> u
+
+(** val add : nat -> nat -> nat **)
+
+let rec add n m =
+  match n with
+  | O -> m
+  | S p0 -> S (add p0 m)
+
 module Pos =
  struct
   type mask =
@@ -399,6 +412,11 @@ module type RingSig =
   val coq_Fone : coq_F
  end
 
+module RingAddationalLemmas =
+ functor (Ring:RingSig) ->
+ struct
+ end
+
 module ModuleAddationalLemmas =
  functor (Group:GroupSig) ->
  functor (Ring:RingSig) ->
@@ -566,13 +584,6 @@ module Sigma =
   let coq_P0 f0 =
     f0.coq_P0
 
-  (** val coq_V0 :
-      'a1 form -> ('a1 coq_S * 'a1 coq_C) -> 'a1 -> ('a1 coq_S * 'a1
-      coq_C) * 'a1 **)
-
-  let coq_V0 f0 =
-    f0.coq_V0
-
   (** val coq_P1 :
       'a1 form -> (('a1 coq_S * 'a1 coq_C) * 'a1) -> 'a1 coq_R -> 'a1 coq_W
       -> (('a1 coq_S * 'a1 coq_C) * 'a1) * 'a1 coq_T **)
@@ -612,253 +623,67 @@ module Sigma =
     f0.extractor
  end
 
-(** val eqSigmaProtocol : 'a1 Sigma.form -> 'a1 Sigma.form **)
+(** val genAndSigmaProtocol :
+    'a1 Sigma.form -> 'a1 Sigma.form -> 'a1 Sigma.form **)
 
-let eqSigmaProtocol sig1 =
-  let eq_Rel = fun s w ->
-    (&&) (sig1.Sigma.coq_Rel (fst s) w) (sig1.Sigma.coq_Rel (snd s) w)
-  in
-  let eq_P0 = fun s r w ->
-    let c1 = snd (sig1.Sigma.coq_P0 (fst s) r w) in
-    let c2 = snd (sig1.Sigma.coq_P0 (snd s) r w) in (s, (c1, c2))
-  in
-  let eq_V0 = fun p0 e ->
-    let s1 = fst (fst p0) in
-    let c1 = fst (snd p0) in (p0, (snd ((sig1.Sigma.coq_V0 (s1, c1)), e)))
-  in
-  let eq_P1 = fun v0 r w ->
-    let s1 = fst (fst (fst v0)) in
-    let c1 = fst (snd (fst v0)) in
-    let e = snd v0 in (v0, (snd (sig1.Sigma.coq_P1 ((s1, c1), e) r w)))
-  in
-  let eq_V1 = fun p1 ->
-    let s1 = fst (fst (fst (fst p1))) in
-    let s2 = snd (fst (fst (fst p1))) in
-    let c1 = fst (snd (fst (fst p1))) in
-    let c2 = snd (snd (fst (fst p1))) in
-    let e = snd (fst p1) in
-    let r = snd p1 in
-    (&&) (sig1.Sigma.coq_V1 (((s1, c1), e), r))
-      (sig1.Sigma.coq_V1 (((s2, c2), e), r))
-  in
-  let eq_simulator = fun s r e ->
-    let s1 = fst s in
-    let s2 = snd s in
-    let sim1 = sig1.Sigma.simulator s1 r e in
-    let sim2 = sig1.Sigma.simulator s2 r e in
-    let c1 = snd (fst (fst sim1)) in
-    let c2 = snd (fst (fst sim2)) in
-    let e1 = snd (fst sim1) in let r1 = snd sim1 in (((s, (c1, c2)), e1), r1)
-  in
-  let eq_simMap = fun s w e r -> sig1.Sigma.simMap (fst s) w e r in
-  let eq_simMapInv = fun s w e t0 -> sig1.Sigma.simMapInv (fst s) w e t0 in
-  let eq_extractor = fun r1 r2 e1 e2 -> sig1.Sigma.extractor r1 r2 e1 e2 in
-  { Sigma.coq_Rel = (Obj.magic eq_Rel); Sigma.add = sig1.Sigma.add;
-  Sigma.zero = sig1.Sigma.zero; Sigma.inv = sig1.Sigma.inv; Sigma.bool_eq =
-  sig1.Sigma.bool_eq; Sigma.disjoint = sig1.Sigma.disjoint; Sigma.coq_P0 =
-  (Obj.magic eq_P0); Sigma.coq_V0 = (Obj.magic eq_V0); Sigma.coq_P1 =
-  (Obj.magic eq_P1); Sigma.coq_V1 = (Obj.magic eq_V1); Sigma.simulator =
-  (Obj.magic eq_simulator); Sigma.simMap = (Obj.magic eq_simMap);
-  Sigma.simMapInv = (Obj.magic eq_simMapInv); Sigma.extractor = eq_extractor }
-
-(** val disSigmaProtocol : 'a1 Sigma.form -> 'a1 Sigma.form **)
-
-let disSigmaProtocol sig1 =
-  let dis_Rel = fun s w ->
-    (||) (sig1.Sigma.coq_Rel (fst s) w) (sig1.Sigma.coq_Rel (snd s) w)
-  in
-  let dis_P0 = fun s rzeb w ->
-    let e = snd rzeb in
-    let z = snd (fst rzeb) in
-    let r = fst (fst rzeb) in
-    let hc1 = snd (sig1.Sigma.coq_P0 (fst s) r w) in
-    let hc2 = snd (sig1.Sigma.coq_P0 (snd s) r w) in
-    let sc1 = snd (fst (fst (sig1.Sigma.simulator (fst s) z e))) in
-    let sc2 = snd (fst (fst (sig1.Sigma.simulator (snd s) z e))) in
-    if sig1.Sigma.coq_Rel (fst s) w then (s, (hc1, sc2)) else (s, (sc1, hc2))
-  in
-  let dis_V0 = fun p0 e -> (p0, e) in
-  let dis_P1 = fun v0 rzeb w ->
-    let s1 = fst (fst (fst v0)) in
-    let s2 = snd (fst (fst v0)) in
-    let c1 = fst (snd (fst v0)) in
-    let c2 = snd (snd (fst v0)) in
-    let e = snd v0 in
-    let se = snd rzeb in
-    let z = snd (fst rzeb) in
-    let r = fst (fst rzeb) in
-    let e1 =
-      snd (sig1.Sigma.coq_V0 (s1, c1) (sig1.Sigma.add e (sig1.Sigma.inv se)))
-    in
-    let ht1 = snd (sig1.Sigma.coq_P1 ((s1, c1), e1) r w) in
-    let ht2 = snd (sig1.Sigma.coq_P1 ((s2, c2), e1) r w) in
-    let st1 = snd (sig1.Sigma.simulator s1 z se) in
-    let st2 = snd (sig1.Sigma.simulator s2 z se) in
-    if sig1.Sigma.coq_Rel s1 w
-    then (v0, ((ht1, e1), st2))
-    else (v0, ((st1, se), ht2))
-  in
-  let dis_V1 = fun p1 ->
-    let s1 = fst (fst (fst (fst p1))) in
-    let s2 = snd (fst (fst (fst p1))) in
-    let c1 = fst (snd (fst (fst p1))) in
-    let c2 = snd (snd (fst (fst p1))) in
-    let e = snd (fst p1) in
-    let e1 = snd (fst (snd p1)) in
-    let e2 = sig1.Sigma.add e (sig1.Sigma.inv e1) in
-    let r1 = fst (fst (snd p1)) in
-    let r2 = snd (snd p1) in
-    (&&) (sig1.Sigma.coq_V1 (((s1, c1), e1), r1))
-      (sig1.Sigma.coq_V1 (((s2, c2), e2), r2))
-  in
-  let dis_simulator = fun s t0 e ->
-    let s1 = fst s in
-    let s2 = snd s in
-    let e1 = snd (fst t0) in
-    let e2 = sig1.Sigma.add e (sig1.Sigma.inv e1) in
-    let r1 = fst (fst t0) in
-    let r2 = snd t0 in
-    let sim1 = sig1.Sigma.simulator s1 r1 e1 in
-    let sim2 = sig1.Sigma.simulator s2 r2 e2 in
-    let c1 = snd (fst (fst sim1)) in
-    let c2 = snd (fst (fst sim2)) in
-    let sr1 = snd sim1 in
-    let sr2 = snd sim2 in
-    let se1 = snd (fst sim1) in (((s, (c1, c2)), e), ((sr1, se1), sr2))
-  in
-  let dis_simMap = fun s w e rtcb ->
-    let r = fst (fst rtcb) in
-    let t0 = snd (fst rtcb) in
-    let c = snd rtcb in
-    let h1 =
-      sig1.Sigma.simMap (fst s) w (sig1.Sigma.add e (sig1.Sigma.inv c)) r
-    in
-    let h2 =
-      sig1.Sigma.simMap (snd s) w (sig1.Sigma.add e (sig1.Sigma.inv c)) r
-    in
-    if sig1.Sigma.coq_Rel (fst s) w
-    then ((h1, (sig1.Sigma.add e (sig1.Sigma.inv c))), t0)
-    else ((t0, c), h2)
-  in
-  let dis_simMapInv = fun s w e tet ->
-    let t1 = fst (fst tet) in
-    let c = snd (fst tet) in
-    let t2 = snd tet in
-    let h1 = sig1.Sigma.simMapInv (fst s) w c t1 in
-    let h2 =
-      sig1.Sigma.simMapInv (snd s) w (sig1.Sigma.add e (sig1.Sigma.inv c)) t2
-    in
-    if sig1.Sigma.coq_Rel (fst s) w
-    then ((h1, t2), (sig1.Sigma.add e (sig1.Sigma.inv c)))
-    else ((h2, t1), c)
-  in
-  let dis_extractor = fun r1 r2 c1 c2 ->
-    let e1 = snd (fst r1) in
-    let e2 = sig1.Sigma.add c1 (sig1.Sigma.inv e1) in
-    let e3 = snd (fst r2) in
-    let e4 = sig1.Sigma.add c2 (sig1.Sigma.inv e3) in
-    let t1 = fst (fst r1) in
-    let t2 = snd r1 in
-    let t3 = fst (fst r2) in
-    let t4 = snd r2 in
-    if negb (sig1.Sigma.bool_eq e1 e3)
-    then sig1.Sigma.extractor t1 t3 e1 e3
-    else sig1.Sigma.extractor t2 t4 e2 e4
-  in
-  { Sigma.coq_Rel = (Obj.magic dis_Rel); Sigma.add = sig1.Sigma.add;
-  Sigma.zero = sig1.Sigma.zero; Sigma.inv = sig1.Sigma.inv; Sigma.bool_eq =
-  sig1.Sigma.bool_eq; Sigma.disjoint = sig1.Sigma.disjoint; Sigma.coq_P0 =
-  (Obj.magic dis_P0); Sigma.coq_V0 = dis_V0; Sigma.coq_P1 =
-  (Obj.magic dis_P1); Sigma.coq_V1 = (Obj.magic dis_V1); Sigma.simulator =
-  (Obj.magic dis_simulator); Sigma.simMap = (Obj.magic dis_simMap);
-  Sigma.simMapInv = (Obj.magic dis_simMapInv); Sigma.extractor =
-  (Obj.magic dis_extractor) }
-
-(** val parSigmaProtocol :
-    'a1 Sigma.form -> 'a2 Sigma.form -> ('a1 * 'a2) Sigma.form **)
-
-let parSigmaProtocol sig1 sig2 =
-  let par_Rel = fun s w ->
+let genAndSigmaProtocol sig1 sig2 =
+  let genAnd_Rel = fun s w ->
     (&&) (sig1.Sigma.coq_Rel (fst s) (fst w))
       (sig2.Sigma.coq_Rel (snd s) (snd w))
   in
-  let par_add = fun e1 e2 -> ((sig1.Sigma.add (fst e1) (fst e2)),
-    (sig2.Sigma.add (snd e1) (snd e2)))
-  in
-  let par_zero = (sig1.Sigma.zero, sig2.Sigma.zero) in
-  let par_bool_eq = fun e1 e2 ->
-    (&&) (sig1.Sigma.bool_eq (fst e1) (fst e2))
-      (sig2.Sigma.bool_eq (snd e1) (snd e2))
-  in
-  let par_inv = fun e -> ((sig1.Sigma.inv (fst e)), (sig2.Sigma.inv (snd e)))
-  in
-  let par_disjoint = fun e1 e2 ->
-    (&&) (sig1.Sigma.disjoint (fst e1) (fst e2))
-      (sig2.Sigma.disjoint (snd e1) (snd e2))
-  in
-  let par_P0 = fun s r w ->
+  let genAnd_P0 = fun s r w ->
     let c1 = snd (sig1.Sigma.coq_P0 (fst s) (fst r) (fst w)) in
     let c2 = snd (sig2.Sigma.coq_P0 (snd s) (snd r) (snd w)) in (s, (c1, c2))
   in
-  let par_V0 = fun p0 e ->
-    let s1 = fst (fst p0) in
-    let s2 = snd (fst p0) in
-    let c1 = fst (snd p0) in
-    let c2 = snd (snd p0) in
-    (p0, ((snd (sig1.Sigma.coq_V0 (s1, c1) (fst e))),
-    (snd (sig2.Sigma.coq_V0 (s2, c2) (snd e)))))
-  in
-  let par_P1 = fun v0 r w ->
+  let genAnd_V0 = fun p0 e -> (p0, e) in
+  let genAnd_P1 = fun v0 r w ->
     let s1 = fst (fst (fst v0)) in
     let s2 = snd (fst (fst v0)) in
     let c1 = fst (snd (fst v0)) in
     let c2 = snd (snd (fst v0)) in
     let e = snd v0 in
-    (v0, ((snd (sig1.Sigma.coq_P1 ((s1, c1), (fst e)) (fst r) (fst w))),
-    (snd (sig2.Sigma.coq_P1 ((s2, c2), (snd e)) (snd r) (snd w)))))
+    (v0, ((snd (sig1.Sigma.coq_P1 ((s1, c1), e) (fst r) (fst w))),
+    (snd (sig2.Sigma.coq_P1 ((s2, c2), e) (snd r) (snd w)))))
   in
-  let par_V1 = fun p1 ->
+  let genAnd_V1 = fun p1 ->
     let s1 = fst (fst (fst (fst p1))) in
     let s2 = snd (fst (fst (fst p1))) in
     let c1 = fst (snd (fst (fst p1))) in
     let c2 = snd (snd (fst (fst p1))) in
     let e = snd (fst p1) in
     let r = snd p1 in
-    (&&) (sig1.Sigma.coq_V1 (((s1, c1), (fst e)), (fst r)))
-      (sig2.Sigma.coq_V1 (((s2, c2), (snd e)), (snd r)))
+    (&&) (sig1.Sigma.coq_V1 (((s1, c1), e), (fst r)))
+      (sig2.Sigma.coq_V1 (((s2, c2), e), (snd r)))
   in
-  let par_simulator = fun s r e ->
+  let genAnd_simulator = fun s r e ->
     let s1 = fst s in
     let s2 = snd s in
-    let sim1 = sig1.Sigma.simulator s1 (fst r) (fst e) in
-    let sim2 = sig2.Sigma.simulator s2 (snd r) (snd e) in
+    let sim1 = sig1.Sigma.simulator s1 (fst r) e in
+    let sim2 = sig2.Sigma.simulator s2 (snd r) e in
     let c1 = snd (fst (fst sim1)) in
     let c2 = snd (fst (fst sim2)) in
-    let e1 = snd (fst sim1) in
-    let e2 = snd (fst sim2) in
-    let r1 = snd sim1 in
-    let r2 = snd sim2 in (((s, (c1, c2)), (e1, e2)), (r1, r2))
+    let r1 = snd sim1 in let r2 = snd sim2 in (((s, (c1, c2)), e), (r1, r2))
   in
-  let par_simMap = fun s w e r ->
-    ((sig1.Sigma.simMap (fst s) (fst w) (fst e) (fst r)),
-    (sig2.Sigma.simMap (snd s) (snd w) (snd e) (snd r)))
+  let genAnd_simMap = fun s w e r ->
+    ((sig1.Sigma.simMap (fst s) (fst w) e (fst r)),
+    (sig2.Sigma.simMap (snd s) (snd w) e (snd r)))
   in
-  let par_simMapInv = fun s w e t0 ->
-    ((sig1.Sigma.simMapInv (fst s) (fst w) (fst e) (fst t0)),
-    (sig2.Sigma.simMapInv (snd s) (snd w) (snd e) (snd t0)))
+  let genAnd_simMapInv = fun s w e t0 ->
+    ((sig1.Sigma.simMapInv (fst s) (fst w) e (fst t0)),
+    (sig2.Sigma.simMapInv (snd s) (snd w) e (snd t0)))
   in
-  let par_extractor = fun r1 r2 e1 e2 ->
-    ((sig1.Sigma.extractor (fst r1) (fst r2) (fst e1) (fst e2)),
-    (sig2.Sigma.extractor (snd r1) (snd r2) (snd e1) (snd e2)))
+  let genAnd_extractor = fun r1 r2 e1 e2 ->
+    ((sig1.Sigma.extractor (fst r1) (fst r2) e1 e2),
+    (sig2.Sigma.extractor (snd r1) (snd r2) e1 e2))
   in
-  { Sigma.coq_Rel = (Obj.magic par_Rel); Sigma.add = par_add; Sigma.zero =
-  par_zero; Sigma.inv = par_inv; Sigma.bool_eq = par_bool_eq;
-  Sigma.disjoint = par_disjoint; Sigma.coq_P0 = (Obj.magic par_P0);
-  Sigma.coq_V0 = (Obj.magic par_V0); Sigma.coq_P1 = (Obj.magic par_P1);
-  Sigma.coq_V1 = (Obj.magic par_V1); Sigma.simulator =
-  (Obj.magic par_simulator); Sigma.simMap = (Obj.magic par_simMap);
-  Sigma.simMapInv = (Obj.magic par_simMapInv); Sigma.extractor =
-  (Obj.magic par_extractor) }
+  { Sigma.coq_Rel = (Obj.magic genAnd_Rel); Sigma.add = sig1.Sigma.add;
+  Sigma.zero = sig1.Sigma.zero; Sigma.inv = sig1.Sigma.inv; Sigma.bool_eq =
+  sig1.Sigma.bool_eq; Sigma.disjoint = sig1.Sigma.disjoint; Sigma.coq_P0 =
+  (Obj.magic genAnd_P0); Sigma.coq_V0 = (Obj.magic genAnd_V0); Sigma.coq_P1 =
+  (Obj.magic genAnd_P1); Sigma.coq_V1 = (Obj.magic genAnd_V1);
+  Sigma.simulator = (Obj.magic genAnd_simulator); Sigma.simMap =
+  (Obj.magic genAnd_simMap); Sigma.simMapInv = (Obj.magic genAnd_simMapInv);
+  Sigma.extractor = (Obj.magic genAnd_extractor) }
 
 type 'a rel_dec = 'a -> 'a -> bool
 
@@ -936,6 +761,24 @@ let rec vreplace _ v i a =
     (match i with
      | O -> Cons (a, wildcard', v')
      | S i' -> Cons (h, wildcard', (vreplace wildcard' v' i' a)))
+
+(** val vapp : nat -> nat -> 'a1 t -> 'a1 t -> 'a1 t **)
+
+let rec vapp _ n2 v1 v2 =
+  match v1 with
+  | Nil -> v2
+  | Cons (a, n, v') -> Cons (a, (add n n2), (vapp n n2 v' v2))
+
+(** val vsub : nat -> 'a1 t -> nat -> nat -> 'a1 t **)
+
+let rec vsub n v i = function
+| O -> Nil
+| S k' -> Cons ((vnth n v i), k', (vsub n v (S i) k'))
+
+(** val vremove_last : nat -> 'a1 t -> 'a1 t **)
+
+let vremove_last n v =
+  vsub (S n) v O n
 
 (** val vmap : ('a1 -> 'a2) -> nat -> 'a1 t -> 'a2 t **)
 
@@ -1619,7 +1462,7 @@ module MatricesG =
       (const (MatF.coq_VF_zero n) j) b
  end
 
-module EncryptionSchemeProp =
+module MixablePropIns =
  functor (Message:GroupSig) ->
  functor (Ciphertext:GroupSig) ->
  functor (Ring:RingSig) ->
@@ -1630,12 +1473,10 @@ module EncryptionSchemeProp =
  functor (MVS:sig
   val op3 : Ring.coq_F -> Field.coq_F -> Ring.coq_F
  end) ->
- functor (Enc:sig
+ functor (Mix:sig
   type coq_KGR
 
   type coq_PK
-
-  type coq_SK
 
   type coq_M = Message.coq_G
 
@@ -1647,30 +1488,24 @@ module EncryptionSchemeProp =
 
   val coq_Mbool_eq : Message.coq_G -> Message.coq_G -> bool
 
-  val keygen : coq_KGR -> coq_PK * coq_SK
-
   val keygenMix : coq_KGR -> coq_PK
 
   val enc : coq_PK -> coq_M -> Ring.coq_F -> Ciphertext.coq_G
-
-  val dec : coq_SK -> Ciphertext.coq_G -> coq_M
-
-  val keymatch : coq_PK -> coq_SK -> bool
  end) ->
  struct
   module AddVSLemmas = VectorSpaceAddationalLemmas(Ciphertext)(Field)(VS)
 
   (** val reenc :
-      Enc.coq_PK -> Ciphertext.coq_G -> Ring.coq_F -> Ciphertext.coq_G **)
+      Mix.coq_PK -> Ciphertext.coq_G -> Ring.coq_F -> Ciphertext.coq_G **)
 
   let reenc pk c r =
-    Ciphertext.coq_Gdot (Enc.enc pk Enc.coq_Mzero r) c
+    Ciphertext.coq_Gdot (Mix.enc pk Mix.coq_Mzero r) c
 
   (** val decryptsToExt :
-      Enc.coq_PK -> Ciphertext.coq_G -> Enc.coq_M -> Ring.coq_F -> bool **)
+      Mix.coq_PK -> Ciphertext.coq_G -> Mix.coq_M -> Ring.coq_F -> bool **)
 
   let decryptsToExt pk c m r =
-    let c' = Enc.enc pk m r in Ciphertext.coq_Gbool_eq c' c
+    let c' = Mix.enc pk m r in Ciphertext.coq_Gbool_eq c' c
  end
 
 module BasicElGamal =
@@ -1753,6 +1588,11 @@ module BasicElGamal =
 
   let keymatch pk sk =
     Group.coq_Gbool_eq (VS.op (fst pk) sk) (snd pk)
+ end
+
+module type Nat =
+ sig
+  val coq_N : nat
  end
 
 module BasicComScheme =
@@ -1957,6 +1797,215 @@ module BasicComScheme =
 
   let comPC n h h1 m r =
     vmap2 (coq_PC h h1) n m r
+ end
+
+module ExtendComScheme =
+ functor (Group:GroupSig) ->
+ functor (Ring:RingSig) ->
+ functor (M:sig
+  val op : Group.coq_G -> Ring.coq_F -> Group.coq_G
+ end) ->
+ functor (Mo:sig
+  module F :
+   sig
+    type coq_A = Ring.coq_F
+   end
+
+  module F_Eqset :
+   sig
+    type coq_A = F.coq_A
+   end
+
+  module F_Eqset_dec :
+   sig
+    module Eq :
+     sig
+      type coq_A = F.coq_A
+     end
+
+    val eqA_dec : Ring.coq_F -> Ring.coq_F -> bool
+   end
+
+  module FSemiRingT :
+   sig
+    module ES :
+     sig
+      module Eq :
+       sig
+        type coq_A = F.coq_A
+       end
+
+      val eqA_dec : Ring.coq_F -> Ring.coq_F -> bool
+     end
+
+    val coq_A0 : Ring.coq_F
+
+    val coq_A1 : Ring.coq_F
+
+    val coq_Aplus : Ring.coq_F -> Ring.coq_F -> Ring.coq_F
+
+    val coq_Amult : Ring.coq_F -> Ring.coq_F -> Ring.coq_F
+   end
+
+  module FMatrix :
+   sig
+    module SR :
+     sig
+     end
+
+    module VA :
+     sig
+      module SR :
+       sig
+       end
+
+      val zero_vec : nat -> FSemiRingT.ES.Eq.coq_A t
+
+      val id_vec : nat -> nat -> FSemiRingT.ES.Eq.coq_A t
+
+      val vector_plus :
+        nat -> FSemiRingT.ES.Eq.coq_A t -> FSemiRingT.ES.Eq.coq_A t ->
+        FSemiRingT.ES.Eq.coq_A t
+
+      val add_vectors :
+        nat -> nat -> FSemiRingT.ES.Eq.coq_A t t -> FSemiRingT.ES.Eq.coq_A t
+
+      val dot_product :
+        nat -> FSemiRingT.ES.Eq.coq_A t -> FSemiRingT.ES.Eq.coq_A t ->
+        FSemiRingT.ES.Eq.coq_A
+     end
+
+    type matrix = FSemiRingT.ES.Eq.coq_A t t
+
+    val get_row : nat -> nat -> matrix -> nat -> FSemiRingT.ES.Eq.coq_A t
+
+    val get_col : nat -> nat -> matrix -> nat -> FSemiRingT.ES.Eq.coq_A t
+
+    val get_elem :
+      nat -> nat -> matrix -> nat -> nat -> FSemiRingT.ES.Eq.coq_A
+
+    val mat_build_spec :
+      nat -> nat -> (nat -> nat -> __ -> __ -> FSemiRingT.ES.Eq.coq_A) ->
+      matrix
+
+    val mat_build :
+      nat -> nat -> (nat -> nat -> __ -> __ -> FSemiRingT.ES.Eq.coq_A) ->
+      matrix
+
+    val zero_matrix : nat -> nat -> matrix
+
+    val id_matrix : nat -> matrix
+
+    val inverse_matrix :
+      (FSemiRingT.ES.Eq.coq_A -> FSemiRingT.ES.Eq.coq_A) -> nat -> nat ->
+      matrix -> matrix
+
+    type row_mat = matrix
+
+    type col_mat = matrix
+
+    val vec_to_row_mat : nat -> FSemiRingT.ES.Eq.coq_A t -> row_mat
+
+    val vec_to_col_mat : nat -> FSemiRingT.ES.Eq.coq_A t -> col_mat
+
+    val row_mat_to_vec : nat -> row_mat -> FSemiRingT.ES.Eq.coq_A t
+
+    val col_mat_to_vec : nat -> col_mat -> FSemiRingT.ES.Eq.coq_A t
+
+    val mat_transpose : nat -> nat -> matrix -> matrix
+
+    val vec_plus :
+      nat -> FSemiRingT.ES.Eq.coq_A t -> FSemiRingT.ES.Eq.coq_A t ->
+      FSemiRingT.ES.Eq.coq_A t
+
+    val mat_plus :
+      nat -> nat -> matrix -> matrix -> FSemiRingT.ES.Eq.coq_A t t
+
+    val mat_mult : nat -> nat -> nat -> matrix -> matrix -> matrix
+
+    val mat_vec_prod :
+      nat -> nat -> matrix -> FSemiRingT.ES.Eq.coq_A t ->
+      FSemiRingT.ES.Eq.coq_A t
+
+    val mat_forall2'_dec :
+      nat -> nat -> FSemiRingT.ES.Eq.coq_A rel_dec -> matrix rel_dec
+
+    val mat_forall2_dec :
+      nat -> nat -> FSemiRingT.ES.Eq.coq_A rel_dec -> matrix rel_dec
+   end
+
+  type coq_VF = Ring.coq_F t
+
+  val coq_VF_zero : nat -> Ring.coq_F t
+
+  val coq_VF_one : nat -> Ring.coq_F t
+
+  val coq_VF_n_id : nat -> nat -> FSemiRingT.ES.Eq.coq_A t
+
+  val coq_VF_prod : nat -> coq_VF -> Ring.coq_F
+
+  val coq_VF_sum : nat -> coq_VF -> Ring.coq_F
+
+  val coq_VF_add : nat -> coq_VF -> coq_VF -> coq_VF
+
+  val coq_VF_neg : nat -> coq_VF -> coq_VF
+
+  val coq_VF_sub : nat -> coq_VF -> coq_VF -> coq_VF
+
+  val coq_VF_mult : nat -> coq_VF -> coq_VF -> coq_VF
+
+  val coq_VF_scale : nat -> coq_VF -> Ring.coq_F -> coq_VF
+
+  val coq_VF_inProd : nat -> coq_VF -> coq_VF -> Ring.coq_F
+
+  val coq_VF_beq : nat -> coq_VF -> coq_VF -> bool
+
+  val coq_VF_an_id : nat -> coq_VF -> bool
+
+  type coq_MF = FMatrix.matrix
+
+  val coq_MF_id : nat -> coq_MF
+
+  val coq_MF_col : nat -> coq_MF -> nat -> coq_VF
+
+  val coq_MF_row : nat -> coq_MF -> nat -> coq_VF
+
+  val coq_MF_mult : nat -> coq_MF -> coq_MF -> coq_MF
+
+  val coq_MF_trans : nat -> coq_MF -> coq_MF
+
+  val coq_MF_CVmult : nat -> coq_MF -> coq_VF -> coq_VF
+
+  val coq_MF_VCmult : nat -> coq_VF -> coq_MF -> coq_VF
+
+  val coq_MF_Fscal : nat -> coq_MF -> coq_VF -> coq_MF
+
+  val coq_MF_scal : nat -> coq_MF -> Ring.coq_F -> coq_MF
+
+  val coq_MFisPermutation : nat -> coq_MF -> bool
+ end) ->
+ struct
+  module MoM = MatricesG(Group)(Ring)(M)(Mo)
+
+  (** val coq_EPC :
+      nat -> Group.coq_G -> MoM.coq_VG -> Mo.coq_VF -> Ring.coq_F ->
+      Group.coq_G **)
+
+  let coq_EPC n h hs m r =
+    Group.coq_Gdot (M.op h r) (MoM.coq_VG_prod n (MoM.coq_VG_Pexp n hs m))
+
+  (** val comEPC :
+      nat -> nat -> Group.coq_G -> MoM.coq_VG -> Mo.coq_VF t -> Mo.coq_VF ->
+      MoM.coq_VG **)
+
+  let comEPC n n' h hs m r =
+    vmap2 (coq_EPC n h hs) n' m r
+
+  (** val com :
+      nat -> Group.coq_G -> MoM.coq_VG -> Mo.coq_MF -> Mo.coq_VF -> MoM.coq_VG **)
+
+  let com n h hs m r =
+    vmap2 (coq_EPC n h hs) n m r
  end
 
 module HardProblems =
@@ -2251,6 +2300,477 @@ module BasicSigmas =
       (Obj.magic dLog2_extractor) }
  end
 
+module type Coq_Nat =
+ sig
+  val coq_N : nat
+ end
+
+module Coq_wikSigma =
+ functor (G:GroupSig) ->
+ functor (G1:GroupSig) ->
+ functor (G2:GroupSig) ->
+ functor (Ring:RingSig) ->
+ functor (Field:FieldSig) ->
+ functor (VS2:sig
+  val op : G2.coq_G -> Field.coq_F -> G2.coq_G
+ end) ->
+ functor (VS1:sig
+  val op : G1.coq_G -> Field.coq_F -> G1.coq_G
+ end) ->
+ functor (MVS:sig
+  val op3 : Ring.coq_F -> Field.coq_F -> Ring.coq_F
+ end) ->
+ functor (Coq_enc:sig
+  type coq_KGR
+
+  type coq_PK
+
+  type coq_M = G.coq_G
+
+  val coq_Mop : G.coq_G -> G.coq_G -> G.coq_G
+
+  val coq_Mzero : G.coq_G
+
+  val coq_Minv : G.coq_G -> G.coq_G
+
+  val coq_Mbool_eq : G.coq_G -> G.coq_G -> bool
+
+  val keygenMix : coq_KGR -> coq_PK
+
+  val enc : coq_PK -> coq_M -> Ring.coq_F -> G1.coq_G
+ end) ->
+ functor (Hack:Coq_Nat) ->
+ struct
+  module Mo = MatricesFIns(Field)
+
+  module EPC = ExtendComScheme(G2)(Field)(VS2)(Mo)
+
+  module PC = BasicComScheme(G2)(Field)(VS2)(Mo)
+
+  module MoG = MatricesG(G2)(Field)(VS2)(Mo)
+
+  module MoC = MatricesG(G1)(Field)(VS1)(Mo)
+
+  module ALVS1 = VectorSpaceAddationalLemmas(G1)(Field)(VS1)
+
+  module ALVS2 = VectorSpaceAddationalLemmas(G2)(Field)(VS2)
+
+  module ALenc = MixablePropIns(G)(G1)(Ring)(Field)(VS1)(MVS)(Coq_enc)
+
+  module ALR = RingAddationalLemmas(Ring)
+
+  type coq_S =
+    ((((Coq_enc.coq_PK * G2.coq_G) * G2.coq_G) * MoG.coq_VG) * G1.coq_G
+    t) * ((G2.coq_G * G1.coq_G) * MoG.coq_VG)
+
+  type coq_W = ((Mo.coq_VF * Field.coq_F) * Ring.coq_F) * Mo.coq_VF
+
+  type coq_C = (G2.coq_G * G1.coq_G) * MoG.coq_VG
+
+  (** val u'_Rel : coq_S -> coq_W -> bool **)
+
+  let u'_Rel s w =
+    let parm = fst s in
+    let pk = fst (fst (fst (fst parm))) in
+    let g0 = snd (fst (fst (fst parm))) in
+    let h = snd (fst (fst parm)) in
+    let hs = snd (fst parm) in
+    let e' = snd parm in
+    let stat = snd s in
+    let a = fst (fst stat) in
+    let b = snd (fst stat) in
+    let cHat = snd stat in
+    let u' = fst (fst (fst w)) in
+    let rTil = snd (fst (fst w)) in
+    let rStar = snd (fst w) in
+    let rHat = snd w in
+    (&&)
+      ((&&)
+        ((&&)
+          (G2.coq_Gbool_eq a
+            (EPC.coq_EPC (add (S O) Hack.coq_N) g0 hs u' rTil))
+          (G1.coq_Gbool_eq b
+            (G1.coq_Gdot
+              (MoC.coq_VG_prod (add (S O) Hack.coq_N)
+                (MoC.coq_VG_Pexp (add (S O) Hack.coq_N) e' u'))
+              (Coq_enc.enc pk Coq_enc.coq_Mzero (Ring.coq_Finv rStar)))))
+        (G2.coq_Gbool_eq (vnth (add (S O) Hack.coq_N) cHat O)
+          (PC.coq_PC g0 h (vnth (add (S O) Hack.coq_N) u' O)
+            (vnth (add (S O) Hack.coq_N) rHat O))))
+      (MoG.coq_VG_eq Hack.coq_N (tl Hack.coq_N cHat)
+        (vmap2 (fun x -> x) Hack.coq_N
+          (vmap2 (fun h1 u r -> PC.coq_PC g0 h1 u r) Hack.coq_N
+            (vremove_last Hack.coq_N cHat) (tl Hack.coq_N u'))
+          (tl Hack.coq_N rHat)))
+
+  (** val u'_P0 : coq_S -> coq_W -> coq_W -> coq_S * coq_C **)
+
+  let u'_P0 s r _ =
+    let parm = fst s in
+    let pk = fst (fst (fst (fst parm))) in
+    let g0 = snd (fst (fst (fst parm))) in
+    let h = snd (fst (fst parm)) in
+    let hs = snd (fst parm) in
+    let e' = snd parm in
+    let stat = snd s in
+    let cHat = snd stat in
+    let w' = fst (fst (fst r)) in
+    let w3 = snd (fst (fst r)) in
+    let w4 = snd (fst r) in
+    let wHat = snd r in
+    let t3 = EPC.coq_EPC (add (S O) Hack.coq_N) g0 hs w' w3 in
+    let t4 =
+      G1.coq_Gdot
+        (MoC.coq_VG_prod (add (S O) Hack.coq_N)
+          (MoC.coq_VG_Pexp (add (S O) Hack.coq_N) e' w'))
+        (Coq_enc.enc pk Coq_enc.coq_Mzero (Ring.coq_Finv w4))
+    in
+    let tHat1 =
+      PC.coq_PC g0 h (vnth (add (S O) Hack.coq_N) w' O)
+        (vnth (add (S O) Hack.coq_N) wHat O)
+    in
+    let tHat2 =
+      vmap2 (fun x -> x) Hack.coq_N
+        (vmap2 (fun h1 u r0 -> PC.coq_PC g0 h1 u r0) Hack.coq_N
+          (vremove_last Hack.coq_N cHat) (tl Hack.coq_N w'))
+        (tl Hack.coq_N wHat)
+    in
+    (s, ((t3, t4), (vapp (S O) Hack.coq_N (Cons (tHat1, O, Nil)) tHat2)))
+
+  (** val u'_V0 :
+      (coq_S * coq_C) -> Field.coq_F -> (coq_S * coq_C) * Field.coq_F **)
+
+  let u'_V0 ggtoxgtor c =
+    (ggtoxgtor, c)
+
+  (** val u'_P1 :
+      ((coq_S * coq_C) * Field.coq_F) -> coq_W -> coq_W ->
+      ((coq_S * coq_C) * Field.coq_F) * coq_W **)
+
+  let u'_P1 ggtoxgtorc r w =
+    let c = snd ggtoxgtorc in
+    let u' = fst (fst (fst w)) in
+    let rTil = snd (fst (fst w)) in
+    let rStar = snd (fst w) in
+    let rHat = snd w in
+    let w' = fst (fst (fst r)) in
+    let w3 = snd (fst (fst r)) in
+    let w4 = snd (fst r) in
+    let wHat = snd r in
+    let s3 = Field.coq_Fadd w3 (Field.coq_Fmul rTil c) in
+    let s4 = Ring.coq_Fadd w4 (MVS.op3 rStar c) in
+    let sHat =
+      Mo.coq_VF_add (add (S O) Hack.coq_N) wHat
+        (Mo.coq_VF_scale (add (S O) Hack.coq_N) rHat c)
+    in
+    let s' =
+      Mo.coq_VF_add (add (S O) Hack.coq_N) w'
+        (Mo.coq_VF_scale (add (S O) Hack.coq_N) u' c)
+    in
+    (ggtoxgtorc, (((s', s3), s4), sHat))
+
+  (** val u'_V1 : (((coq_S * coq_C) * Field.coq_F) * coq_W) -> bool **)
+
+  let u'_V1 transcript =
+    let s = fst (fst (fst transcript)) in
+    let c = snd (fst (fst transcript)) in
+    let e = snd (fst transcript) in
+    let t0 = snd transcript in
+    let parm = fst s in
+    let pk = fst (fst (fst (fst parm))) in
+    let g0 = snd (fst (fst (fst parm))) in
+    let h = snd (fst (fst parm)) in
+    let hs = snd (fst parm) in
+    let e' = snd parm in
+    let stat = snd s in
+    let a = fst (fst stat) in
+    let b = snd (fst stat) in
+    let cHat = snd stat in
+    let t3 = fst (fst c) in
+    let t4 = snd (fst c) in
+    let tHat = snd c in
+    let s3 = snd (fst (fst t0)) in
+    let s4 = snd (fst t0) in
+    let sHat = snd t0 in
+    let s' = fst (fst (fst t0)) in
+    (&&)
+      ((&&)
+        ((&&)
+          (G2.coq_Gbool_eq (G2.coq_Gdot t3 (VS2.op a e))
+            (EPC.coq_EPC (add (S O) Hack.coq_N) g0 hs s' s3))
+          (G1.coq_Gbool_eq (G1.coq_Gdot t4 (VS1.op b e))
+            (G1.coq_Gdot
+              (MoC.coq_VG_prod (add (S O) Hack.coq_N)
+                (MoC.coq_VG_Pexp (add (S O) Hack.coq_N) e' s'))
+              (Coq_enc.enc pk Coq_enc.coq_Mzero (Ring.coq_Finv s4)))))
+        (G2.coq_Gbool_eq
+          (G2.coq_Gdot (vnth (add (S O) Hack.coq_N) tHat O)
+            (VS2.op (vnth (add (S O) Hack.coq_N) cHat O) e))
+          (PC.coq_PC g0 h (vnth (add (S O) Hack.coq_N) s' O)
+            (vnth (add (S O) Hack.coq_N) sHat O))))
+      (MoG.coq_VG_eq Hack.coq_N
+        (vmap2 (fun tHat0 cHat0 -> G2.coq_Gdot tHat0 (VS2.op cHat0 e))
+          Hack.coq_N (tl Hack.coq_N tHat) (tl Hack.coq_N cHat))
+        (vmap2 (fun x -> x) Hack.coq_N
+          (vmap2 (fun h1 u r -> PC.coq_PC g0 h1 u r) Hack.coq_N
+            (vremove_last Hack.coq_N cHat) (tl Hack.coq_N s'))
+          (tl Hack.coq_N sHat)))
+
+  (** val u'_simulator_mapper :
+      coq_S -> coq_W -> Field.coq_F -> coq_W -> coq_W **)
+
+  let u'_simulator_mapper _ w c r =
+    let u' = fst (fst (fst w)) in
+    let rTil = snd (fst (fst w)) in
+    let rStar = snd (fst w) in
+    let rHat = snd w in
+    let w' = fst (fst (fst r)) in
+    let w3 = snd (fst (fst r)) in
+    let w4 = snd (fst r) in
+    let wHat = snd r in
+    let s3 = Field.coq_Fadd w3 (Field.coq_Fmul rTil c) in
+    let s4 = Ring.coq_Fadd w4 (MVS.op3 rStar c) in
+    let sHat =
+      Mo.coq_VF_add (add (S O) Hack.coq_N) wHat
+        (Mo.coq_VF_scale (add (S O) Hack.coq_N) rHat c)
+    in
+    let s' =
+      Mo.coq_VF_add (add (S O) Hack.coq_N) w'
+        (Mo.coq_VF_scale (add (S O) Hack.coq_N) u' c)
+    in
+    (((s', s3), s4), sHat)
+
+  (** val u'_simulator_mapper_inv :
+      coq_S -> coq_W -> Field.coq_F -> coq_W -> coq_W **)
+
+  let u'_simulator_mapper_inv _ w c r =
+    let u' = fst (fst (fst w)) in
+    let rTil = snd (fst (fst w)) in
+    let rStar = snd (fst w) in
+    let rHat = snd w in
+    let w' = fst (fst (fst r)) in
+    let w3 = snd (fst (fst r)) in
+    let w4 = snd (fst r) in
+    let wHat = snd r in
+    let s3 = Field.coq_Fadd w3 (Field.coq_Finv (Field.coq_Fmul rTil c)) in
+    let s4 = Ring.coq_Fadd w4 (Ring.coq_Finv (MVS.op3 rStar c)) in
+    let sHat =
+      Mo.coq_VF_sub (add (S O) Hack.coq_N) wHat
+        (Mo.coq_VF_scale (add (S O) Hack.coq_N) rHat c)
+    in
+    let s' =
+      Mo.coq_VF_sub (add (S O) Hack.coq_N) w'
+        (Mo.coq_VF_scale (add (S O) Hack.coq_N) u' c)
+    in
+    (((s', s3), s4), sHat)
+
+  (** val u'_simulator :
+      coq_S -> coq_W -> Field.coq_F -> ((coq_S * coq_C) * Field.coq_F) * coq_W **)
+
+  let u'_simulator s z e =
+    let parm = fst s in
+    let pk = fst (fst (fst (fst parm))) in
+    let g0 = snd (fst (fst (fst parm))) in
+    let h = snd (fst (fst parm)) in
+    let hs = snd (fst parm) in
+    let e' = snd parm in
+    let stat = snd s in
+    let a = fst (fst stat) in
+    let b = snd (fst stat) in
+    let cHat = snd stat in
+    let s3 = snd (fst (fst z)) in
+    let s4 = snd (fst z) in
+    let sHat = snd z in
+    let s' = fst (fst (fst z)) in
+    let t3 =
+      G2.coq_Gdot (EPC.coq_EPC (add (S O) Hack.coq_N) g0 hs s' s3)
+        (G2.coq_Ginv (VS2.op a e))
+    in
+    let t4 =
+      G1.coq_Gdot
+        (G1.coq_Gdot
+          (MoC.coq_VG_prod (add (S O) Hack.coq_N)
+            (MoC.coq_VG_Pexp (add (S O) Hack.coq_N) e' s'))
+          (Coq_enc.enc pk Coq_enc.coq_Mzero (Ring.coq_Finv s4)))
+        (G1.coq_Ginv (VS1.op b e))
+    in
+    let tHat1 =
+      G2.coq_Gdot
+        (PC.coq_PC g0 h (vnth (add (S O) Hack.coq_N) s' O)
+          (vnth (add (S O) Hack.coq_N) sHat O))
+        (G2.coq_Ginv
+          (vnth (add (S O) Hack.coq_N)
+            (MoG.coq_VG_Sexp (add (S O) Hack.coq_N) cHat e) O))
+    in
+    let tHat =
+      vmap2 (fun x -> x) Hack.coq_N
+        (vmap2 (fun x -> x) Hack.coq_N
+          (vmap2 (fun cHat1 s'0 sHat0 cHat2 ->
+            G2.coq_Gdot (PC.coq_PC g0 cHat1 s'0 sHat0)
+              (G2.coq_Ginv (VS2.op cHat2 e))) Hack.coq_N
+            (vremove_last Hack.coq_N cHat) (tl Hack.coq_N s'))
+          (tl Hack.coq_N sHat)) (tl Hack.coq_N cHat)
+    in
+    (((s, ((t3, t4), (vapp (S O) Hack.coq_N (Cons (tHat1, O, Nil)) tHat))),
+    e), z)
+
+  (** val u'_extractor :
+      coq_W -> coq_W -> Field.coq_F -> Field.coq_F -> coq_W **)
+
+  let u'_extractor s1 s2 c1 c2 =
+    let s3_1 = snd (fst (fst s1)) in
+    let s4_1 = snd (fst s1) in
+    let sHat_1 = snd s1 in
+    let s'_1 = fst (fst (fst s1)) in
+    let s3_2 = snd (fst (fst s2)) in
+    let s4_2 = snd (fst s2) in
+    let sHat_2 = snd s2 in
+    let s'_2 = fst (fst (fst s2)) in
+    let w' =
+      Mo.coq_VF_scale (add (S O) Hack.coq_N)
+        (Mo.coq_VF_add (add (S O) Hack.coq_N) s'_1
+          (Mo.coq_VF_neg (add (S O) Hack.coq_N) s'_2))
+        (Field.coq_FmulInv (Field.coq_Fadd c1 (Field.coq_Finv c2)))
+    in
+    let w3 =
+      Field.coq_Fmul (Field.coq_Fadd s3_1 (Field.coq_Finv s3_2))
+        (Field.coq_FmulInv (Field.coq_Fadd c1 (Field.coq_Finv c2)))
+    in
+    let w4 =
+      MVS.op3 (Ring.coq_Fadd s4_1 (Ring.coq_Finv s4_2))
+        (Field.coq_FmulInv (Field.coq_Fadd c1 (Field.coq_Finv c2)))
+    in
+    let wHat =
+      Mo.coq_VF_scale (add (S O) Hack.coq_N)
+        (Mo.coq_VF_add (add (S O) Hack.coq_N) sHat_1
+          (Mo.coq_VF_neg (add (S O) Hack.coq_N) sHat_2))
+        (Field.coq_FmulInv (Field.coq_Fadd c1 (Field.coq_Finv c2)))
+    in
+    (((w', w3), w4), wHat)
+
+  (** val disjoint : Field.coq_F -> Field.coq_F -> bool **)
+
+  let disjoint c1 c2 =
+    negb (Field.coq_Fbool_eq c1 c2)
+
+  (** val u'Form : Field.coq_F Sigma.form **)
+
+  let u'Form =
+    { Sigma.coq_Rel = (Obj.magic u'_Rel); Sigma.add = Field.coq_Fadd;
+      Sigma.zero = Field.coq_Fzero; Sigma.inv = Field.coq_Finv;
+      Sigma.bool_eq = Field.coq_Fbool_eq; Sigma.disjoint = disjoint;
+      Sigma.coq_P0 = (Obj.magic u'_P0); Sigma.coq_V0 = (Obj.magic u'_V0);
+      Sigma.coq_P1 = (Obj.magic u'_P1); Sigma.coq_V1 = (Obj.magic u'_V1);
+      Sigma.simulator = (Obj.magic u'_simulator); Sigma.simMap =
+      (Obj.magic u'_simulator_mapper); Sigma.simMapInv =
+      (Obj.magic u'_simulator_mapper_inv); Sigma.extractor =
+      (Obj.magic u'_extractor) }
+ end
+
+module WikstromMixnet =
+ functor (G:GroupSig) ->
+ functor (G1:GroupSig) ->
+ functor (G2:GroupSig) ->
+ functor (Ring:RingSig) ->
+ functor (Field:FieldSig) ->
+ functor (VS2:sig
+  val op : G2.coq_G -> Field.coq_F -> G2.coq_G
+ end) ->
+ functor (VS1:sig
+  val op : G1.coq_G -> Field.coq_F -> G1.coq_G
+ end) ->
+ functor (MVS:sig
+  val op3 : Ring.coq_F -> Field.coq_F -> Ring.coq_F
+ end) ->
+ functor (Coq_enc:sig
+  type coq_KGR
+
+  type coq_PK
+
+  type coq_M = G.coq_G
+
+  val coq_Mop : G.coq_G -> G.coq_G -> G.coq_G
+
+  val coq_Mzero : G.coq_G
+
+  val coq_Minv : G.coq_G -> G.coq_G
+
+  val coq_Mbool_eq : G.coq_G -> G.coq_G -> bool
+
+  val keygenMix : coq_KGR -> coq_PK
+
+  val enc : coq_PK -> coq_M -> Ring.coq_F -> G1.coq_G
+ end) ->
+ functor (Hack:Nat) ->
+ struct
+  module BS = BasicSigmas(G2)(Field)(VS2)
+
+  module WS =
+   Coq_wikSigma(G)(G1)(G2)(Ring)(Field)(VS2)(VS1)(MVS)(Coq_enc)(Hack)
+
+  module Mo = MatricesFIns(Field)
+
+  module MoC = MatricesG(G1)(Field)(VS1)(Mo)
+
+  module EPC = ExtendComScheme(G2)(Field)(VS2)(Mo)
+
+  module PC = BasicComScheme(G2)(Field)(VS2)(Mo)
+
+  type randomnessVector = Ring.coq_F t
+
+  module ALVS1 = VectorSpaceAddationalLemmas(G1)(Field)(VS1)
+
+  module ALVS2 = VectorSpaceAddationalLemmas(G2)(Field)(VS2)
+
+  module ALenc = MixablePropIns(G)(G1)(Ring)(Field)(VS1)(MVS)(Coq_enc)
+
+  module HardProb = HardProblems(G2)(Field)(VS2)
+
+  module ALR = RingAddationalLemmas(Ring)
+
+  (** val coq_RF_inProd :
+      nat -> Mo.coq_VF -> randomnessVector -> Ring.coq_F **)
+
+  let coq_RF_inProd n a b =
+    vfold_left Ring.coq_Fadd n Ring.coq_Fzero (vmap2 MVS.op3 n b a)
+
+  (** val coq_RF_CVmult :
+      nat -> Mo.coq_MF -> randomnessVector -> randomnessVector **)
+
+  let coq_RF_CVmult n m v =
+    vmap (fun a -> coq_RF_inProd n a v) n m
+
+  (** val coq_RandCon :
+      nat -> (Field.coq_F * Field.coq_F) t -> Field.coq_F **)
+
+  let coq_RandCon n v =
+    vfold_left (fun ac x ->
+      Field.coq_Fadd (snd x) (Field.coq_Fmul (fst x) ac)) n Field.coq_Fzero v
+
+  (** val coq_WikstromSigma : Field.coq_F Sigma.form **)
+
+  let coq_WikstromSigma =
+    genAndSigmaProtocol (genAndSigmaProtocol BS.dLogForm BS.dLogForm)
+      WS.u'Form
+
+  (** val coq_WikstromStatment :
+      Coq_enc.coq_PK -> G2.coq_G -> G2.coq_G -> EPC.MoM.coq_VG ->
+      EPC.MoM.coq_VG -> EPC.MoM.coq_VG -> Mo.coq_VF -> G1.coq_G t -> G1.coq_G
+      t -> Field.coq_F Sigma.coq_S **)
+
+  let coq_WikstromStatment pk g0 h hs c cHat u e e' =
+    Obj.magic (((g0,
+      (G2.coq_Gdot (EPC.MoM.coq_VG_prod (add (S O) Hack.coq_N) c)
+        (G2.coq_Ginv (EPC.MoM.coq_VG_prod (add (S O) Hack.coq_N) hs)))), (g0,
+      (G2.coq_Gdot (vnth (add (S O) Hack.coq_N) cHat Hack.coq_N)
+        (G2.coq_Ginv (VS2.op h (Mo.coq_VF_prod (add (S O) Hack.coq_N) u)))))),
+      (((((pk, g0), h), hs), e'),
+      (((EPC.MoM.coq_VG_prod (add (S O) Hack.coq_N)
+          (EPC.MoM.coq_VG_Pexp (add (S O) Hack.coq_N) c u)),
+      (MoC.coq_VG_prod (add (S O) Hack.coq_N)
+        (MoC.coq_VG_Pexp (add (S O) Hack.coq_N) e u))), cHat)))
+ end
+
 (** val pminusN : Big.big_int -> Big.big_int -> Big.big_int **)
 
 let pminusN x y =
@@ -2427,28 +2947,10 @@ let mul0 n v1 v2 =
 let opp0 n v =
   Z.modulo (Z.opp (val0 n v)) n
 
-let rec pow_mult x e n acc =
-    Big.positive_case
-    (fun w -> pow_mult (mul0 n x x) w n (mul0 n acc x))
-    (fun w -> pow_mult (mul0 n x x) w n acc)
-    (fun _ -> (mul0 n x acc))
-    e
-
-let pow x s n =
-    let e = val0 n s in
-    (Big.z_case
-    (fun _ -> Big.one)
-    (fun p0 -> pow_mult x p0 n Big.one)
-    (fun _ -> Big.one)
-    e)
-
-let twoBigInt = Big_int.big_int_of_string "2"
-
-(* We use the Fermat's little theorem *)
-let mul_inv n a = pow a (Big_int.sub_big_int n twoBigInt) n
+(** val inv0 : Big.big_int -> znz -> znz **)
 
 let inv0 p0 v =
- mul_inv p0 v
+  Z.modulo (fst (fst (zegcd (val0 p0 v) p0))) p0
 
 (** val div : Big.big_int -> znz -> znz -> znz **)
 
@@ -2457,532 +2959,11 @@ let div p0 v1 v2 =
 
 (** val p : Big.big_int **)
 
-let p =
-  (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.double (Big.double (Big.doubleplusone (Big.double (Big.double
-    (Big.doubleplusone (Big.double (Big.double (Big.double (Big.double
-    (Big.double (Big.double (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.double (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.double (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.double (Big.double (Big.double
-    (Big.double (Big.double (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.double (Big.double (Big.double (Big.doubleplusone
-    (Big.double (Big.double (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.doubleplusone
-    (Big.double (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.doubleplusone
-    (Big.double (Big.double (Big.double (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double (Big.double
-    (Big.double (Big.doubleplusone (Big.double (Big.double (Big.double
-    (Big.doubleplusone (Big.double (Big.double (Big.double (Big.double
-    (Big.double (Big.double (Big.double (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double
-    (Big.doubleplusone (Big.double (Big.double (Big.double (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double (Big.double
-    (Big.double (Big.double (Big.doubleplusone (Big.double (Big.doubleplusone
-    (Big.double (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.double (Big.doubleplusone (Big.double (Big.double (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.double (Big.double (Big.doubleplusone (Big.double
-    (Big.double (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.double (Big.double (Big.double (Big.double (Big.doubleplusone
-    (Big.double (Big.double (Big.double (Big.double (Big.doubleplusone
-    (Big.double (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.double (Big.double (Big.doubleplusone
-    (Big.double (Big.double (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.double (Big.double (Big.double (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.doubleplusone
-    (Big.double (Big.double (Big.double (Big.double (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.doubleplusone
-    (Big.double (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.double (Big.double (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.double (Big.double (Big.double
-    (Big.double (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double (Big.double
-    (Big.double (Big.double (Big.double (Big.double (Big.doubleplusone
-    (Big.double (Big.doubleplusone (Big.double (Big.double (Big.doubleplusone
-    (Big.double (Big.double (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.double (Big.doubleplusone (Big.double (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double (Big.double
-    (Big.double (Big.doubleplusone (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.double (Big.doubleplusone (Big.double (Big.doubleplusone (Big.double
-    (Big.double (Big.double (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.double (Big.doubleplusone (Big.double (Big.double (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.double (Big.double (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.double (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double (Big.double
-    (Big.doubleplusone (Big.double (Big.double (Big.doubleplusone (Big.double
-    (Big.double (Big.double (Big.double (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.double (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double (Big.double
-    (Big.double (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.double (Big.double (Big.double (Big.double (Big.double
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double (Big.double
-    (Big.double (Big.double (Big.double (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.double (Big.double
-    (Big.double (Big.double (Big.double (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.double (Big.double (Big.doubleplusone
-    (Big.double (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.double (Big.doubleplusone (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.double (Big.doubleplusone (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.double (Big.doubleplusone (Big.double
-    (Big.double (Big.doubleplusone (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.double (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.double (Big.double (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.double (Big.double (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.double (Big.doubleplusone (Big.double
-    (Big.double (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.double (Big.double (Big.double (Big.doubleplusone
-    (Big.double (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.double (Big.double (Big.double (Big.double
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.double (Big.double (Big.doubleplusone
-    (Big.double (Big.doubleplusone (Big.double (Big.double (Big.double
-    (Big.double (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.double (Big.doubleplusone (Big.double
-    (Big.double (Big.double (Big.doubleplusone (Big.double (Big.double
-    (Big.double (Big.doubleplusone (Big.double (Big.double (Big.doubleplusone
-    (Big.double (Big.double (Big.double (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double (Big.double
-    (Big.doubleplusone (Big.double (Big.double (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double
-    (Big.doubleplusone (Big.double (Big.double (Big.double (Big.doubleplusone
-    (Big.double (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.double (Big.doubleplusone (Big.double (Big.double (Big.double
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.double (Big.double (Big.doubleplusone
-    (Big.double (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.double (Big.double (Big.doubleplusone
-    (Big.double (Big.double (Big.double (Big.double (Big.doubleplusone
-    (Big.double (Big.doubleplusone (Big.double (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.double (Big.double (Big.doubleplusone (Big.double (Big.double
-    (Big.double (Big.double (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.doubleplusone
-    (Big.double (Big.double (Big.doubleplusone (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.double (Big.doubleplusone (Big.double (Big.double (Big.doubleplusone
-    (Big.double (Big.double (Big.double (Big.doubleplusone (Big.double
-    (Big.double (Big.double (Big.double (Big.double (Big.double
-    (Big.doubleplusone (Big.double (Big.double (Big.double (Big.double
-    (Big.double (Big.doubleplusone (Big.double (Big.doubleplusone (Big.double
-    (Big.double (Big.double (Big.double (Big.double (Big.doubleplusone
-    (Big.double (Big.double (Big.double (Big.double (Big.double
-    (Big.doubleplusone (Big.double (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double
-    (Big.doubleplusone (Big.double (Big.double (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.double (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double
-    (Big.doubleplusone (Big.double (Big.double (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double (Big.double
-    (Big.double (Big.doubleplusone (Big.double (Big.doubleplusone (Big.double
-    (Big.double (Big.double (Big.double (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.double (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.double (Big.double
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.double (Big.double
-    (Big.double (Big.double (Big.double (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double (Big.double
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.double (Big.double (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.doubleplusone
-    (Big.double (Big.doubleplusone (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.double (Big.double (Big.doubleplusone
-    (Big.double (Big.double (Big.double (Big.doubleplusone (Big.double
-    (Big.double (Big.doubleplusone (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.double (Big.double (Big.doubleplusone
-    (Big.double (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.double (Big.double
-    (Big.double (Big.doubleplusone (Big.double (Big.doubleplusone (Big.double
-    (Big.double (Big.doubleplusone (Big.double (Big.double (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.double (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.double (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.double (Big.double (Big.double (Big.doubleplusone
-    (Big.double (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.double (Big.double (Big.double (Big.double (Big.double (Big.double
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.double (Big.double (Big.doubleplusone (Big.double (Big.doubleplusone
-    (Big.double (Big.doubleplusone (Big.double (Big.doubleplusone (Big.double
-    (Big.double (Big.doubleplusone (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.double (Big.double (Big.double
-    (Big.double (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.double (Big.doubleplusone (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.double (Big.double (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.double (Big.double (Big.doubleplusone (Big.double (Big.doubleplusone
-    (Big.double (Big.doubleplusone (Big.double (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.double (Big.double (Big.doubleplusone (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.doubleplusone
-    (Big.double (Big.double (Big.doubleplusone (Big.double (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double
-    (Big.doubleplusone (Big.double (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.double (Big.double (Big.doubleplusone
-    (Big.double (Big.double (Big.doubleplusone (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.double (Big.double (Big.double (Big.double (Big.double (Big.double
-    (Big.double (Big.doubleplusone (Big.double (Big.double (Big.double
-    (Big.double (Big.doubleplusone (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.double (Big.double (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.double (Big.double (Big.double (Big.double (Big.double (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.double (Big.double (Big.double
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.double (Big.double
-    (Big.double (Big.double (Big.double (Big.double (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.doubleplusone
-    (Big.double (Big.double (Big.double (Big.double (Big.double (Big.double
-    (Big.double (Big.double (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.double (Big.doubleplusone (Big.double (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.double (Big.double (Big.double
-    (Big.double (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.double (Big.doubleplusone (Big.double (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.double (Big.double (Big.doubleplusone
-    (Big.double (Big.double (Big.double (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.double (Big.double (Big.double (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.double (Big.double (Big.double
-    (Big.double (Big.double (Big.doubleplusone (Big.double (Big.doubleplusone
-    (Big.double (Big.double (Big.doubleplusone (Big.double (Big.doubleplusone
-    (Big.double (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.double (Big.doubleplusone (Big.double
-    (Big.double (Big.doubleplusone (Big.double (Big.double (Big.double
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.double (Big.double
-    (Big.double (Big.double (Big.double (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double
-    (Big.doubleplusone (Big.double (Big.double (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.double (Big.double (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.double (Big.doubleplusone (Big.double
-    (Big.double (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.double (Big.double (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.double (Big.double (Big.doubleplusone (Big.double
-    (Big.double (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.double (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.double (Big.double (Big.doubleplusone (Big.double (Big.double
-    (Big.double (Big.doubleplusone (Big.double (Big.double (Big.double
-    (Big.double (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.double (Big.double (Big.doubleplusone (Big.double (Big.double
-    (Big.double (Big.double (Big.double (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.doubleplusone
-    (Big.double (Big.doubleplusone (Big.double (Big.double (Big.double
-    (Big.double (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.double (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.double (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.double (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double (Big.double
-    (Big.double (Big.doubleplusone (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.double (Big.double (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.double (Big.double (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.double (Big.double (Big.double (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.double (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.double (Big.double (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.double (Big.double (Big.doubleplusone (Big.double (Big.double
-    (Big.double (Big.double (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.double (Big.double (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double (Big.double
-    (Big.doubleplusone (Big.double (Big.double (Big.double (Big.double
-    (Big.double (Big.doubleplusone (Big.double (Big.doubleplusone (Big.double
-    (Big.double (Big.doubleplusone (Big.double (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double
-    (Big.doubleplusone (Big.double (Big.double (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double
-    (Big.doubleplusone (Big.double (Big.double (Big.double (Big.double
-    (Big.double (Big.double (Big.double (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double (Big.double
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.double (Big.doubleplusone (Big.double (Big.double (Big.double
-    (Big.doubleplusone (Big.double (Big.double (Big.doubleplusone (Big.double
-    (Big.double (Big.doubleplusone (Big.double (Big.double (Big.double
-    (Big.double (Big.double (Big.double (Big.double (Big.double (Big.double
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.double (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.double (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.doubleplusone
-    (Big.double (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.double (Big.double (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.double (Big.double (Big.double (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.double (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.double (Big.double (Big.doubleplusone (Big.double (Big.doubleplusone
-    (Big.double (Big.double (Big.doubleplusone (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.double (Big.double (Big.double
-    (Big.double (Big.double (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.double (Big.double (Big.double (Big.doubleplusone (Big.double
-    (Big.double (Big.double (Big.double (Big.doubleplusone (Big.double
-    (Big.double (Big.doubleplusone (Big.double (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.double (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.double (Big.doubleplusone (Big.double
-    (Big.double (Big.double (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.double (Big.double (Big.double (Big.double
-    (Big.double (Big.double (Big.double (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.double (Big.doubleplusone (Big.double (Big.double (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double (Big.double
-    (Big.double (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.double (Big.double (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.double (Big.double (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.double (Big.double (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.double (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.double (Big.double (Big.doubleplusone
-    (Big.double (Big.double (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.double (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.double (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.double (Big.double (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.double (Big.doubleplusone (Big.double (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double (Big.double
-    (Big.double (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.double (Big.double (Big.double
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.double (Big.doubleplusone (Big.double (Big.double (Big.double
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.double (Big.double (Big.double (Big.double (Big.doubleplusone
-    (Big.double (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.double (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.double (Big.double (Big.double (Big.doubleplusone (Big.double
-    (Big.double (Big.double (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.double (Big.double (Big.double (Big.double
-    (Big.double (Big.doubleplusone (Big.double (Big.double (Big.double
-    (Big.double (Big.double (Big.double (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double (Big.double
-    (Big.double (Big.double (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.double (Big.double (Big.doubleplusone (Big.double
-    (Big.double (Big.double (Big.doubleplusone (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.double (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.double (Big.doubleplusone (Big.double (Big.doubleplusone (Big.double
-    (Big.double (Big.double (Big.double (Big.doubleplusone (Big.double
-    (Big.double (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.double (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.doubleplusone
-    (Big.double (Big.doubleplusone (Big.double (Big.double (Big.double
-    (Big.doubleplusone (Big.double (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.double (Big.double
-    (Big.double (Big.doubleplusone (Big.double (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.double (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.double (Big.double (Big.doubleplusone (Big.double (Big.doubleplusone
-    (Big.double (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.double (Big.double (Big.double (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double (Big.double
-    (Big.doubleplusone (Big.double (Big.double (Big.double (Big.doubleplusone
-    (Big.double (Big.double (Big.doubleplusone (Big.double (Big.doubleplusone
-    (Big.double (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.double (Big.double
-    (Big.double (Big.double (Big.double (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.double (Big.doubleplusone (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.double (Big.doubleplusone (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.double (Big.double (Big.doubleplusone (Big.double (Big.doubleplusone
-    (Big.double (Big.doubleplusone (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.double (Big.double (Big.double
-    (Big.double (Big.double (Big.double (Big.doubleplusone (Big.double
-    (Big.double (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.double (Big.double
-    (Big.double (Big.double (Big.double (Big.double
-    Big.one)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
+let p = Big.of_string "8095455969267383450536091939011431888343052744233774808515030596297626946131583007491317242326621464546135030140184007406503191036604066436734360427237223"
 
 (** val q : Big.big_int **)
 
-let q =
-  (Big.doubleplusone (Big.double (Big.doubleplusone (Big.double (Big.double
-    (Big.doubleplusone (Big.double (Big.double (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.double (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.double (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.double (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.double (Big.doubleplusone (Big.double (Big.double (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.doubleplusone
-    (Big.double (Big.double (Big.double (Big.double (Big.double
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double (Big.double
-    (Big.doubleplusone (Big.double (Big.double (Big.double (Big.double
-    (Big.doubleplusone (Big.double (Big.double (Big.double (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.doubleplusone
-    (Big.double (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.double (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.double (Big.double
-    (Big.double (Big.doubleplusone (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.double (Big.double
-    (Big.double (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double (Big.double
-    (Big.double (Big.double (Big.double (Big.double (Big.double
-    (Big.doubleplusone (Big.double (Big.double (Big.double (Big.double
-    (Big.double (Big.double (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double (Big.double
-    (Big.double (Big.double (Big.doubleplusone (Big.double (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.double (Big.double (Big.double
-    (Big.double (Big.double (Big.doubleplusone (Big.double (Big.doubleplusone
-    (Big.double (Big.doubleplusone (Big.double (Big.doubleplusone (Big.double
-    (Big.double (Big.double (Big.doubleplusone (Big.double (Big.double
-    (Big.doubleplusone (Big.double (Big.double (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.double (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.double (Big.double (Big.double (Big.double (Big.doubleplusone
-    (Big.double (Big.double (Big.double (Big.double (Big.doubleplusone
-    (Big.double (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double
-    (Big.doubleplusone (Big.double (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone (Big.double
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.doubleplusone
-    (Big.double (Big.doubleplusone (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.double (Big.double (Big.doubleplusone (Big.double (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.doubleplusone
-    (Big.double (Big.double (Big.doubleplusone (Big.doubleplusone
-    (Big.doubleplusone (Big.doubleplusone (Big.double (Big.double (Big.double
-    (Big.double
-    Big.one)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
+let q = Big.of_string "4047727984633691725268045969505715944171526372116887404257515298148813473065791503745658621163310732273067515070092003703251595518302033218367180213618611"
 
 type fp = znz
 
@@ -3172,83 +3153,28 @@ module HeliosIACR2018VS =
     op0
  end
 
-module BS = BasicSigmas(HeliosIACR2018G)(HeliosIACR2018F)(HeliosIACR2018VS)
-
-module DG = DualGroupIns(HeliosIACR2018G)
+module DualGroup = DualGroupIns(HeliosIACR2018G)
 
 module DVS =
- DualVectorSpaceIns(HeliosIACR2018G)(DG)(HeliosIACR2018F)(HeliosIACR2018VS)
+ DualVectorSpaceIns(HeliosIACR2018G)(DualGroup)(HeliosIACR2018F)(HeliosIACR2018VS)
 
-module MVS = VectorSpaceModuleSameGroupInsIns(DG)(HeliosIACR2018F)(DVS)
+module MVS = VectorSpaceModuleSameGroupInsIns(DualGroup)(HeliosIACR2018F)(DVS)
 
 module ES =
- BasicElGamal(HeliosIACR2018G)(HeliosIACR2018F)(HeliosIACR2018VS)(DG)(DVS)(MVS)
+ BasicElGamal(HeliosIACR2018G)(HeliosIACR2018F)(HeliosIACR2018VS)(DualGroup)(DVS)(MVS)
 
-module ALES =
- EncryptionSchemeProp(HeliosIACR2018G)(DG)(HeliosIACR2018F)(HeliosIACR2018F)(DVS)(MVS)(ES)
+let rec intToNat = (fun i ->
+  match i with
+  | 0 -> O
+  | x -> S (intToNat (x-1))
+)
 
-(** val dHTForm : f Sigma.form **)
+module N =
+ struct
+  (** val coq_N : nat **)
 
-let dHTForm =
-  eqSigmaProtocol BS.dLogForm
+  let coq_N = intToNat 99
+ end
 
-(** val dHTDisForm : f Sigma.form **)
-
-let dHTDisForm =
-  disSigmaProtocol dHTForm
-
-(** val oneOrZero : f Sigma.coq_S -> f Sigma.coq_S **)
-
-let oneOrZero s =
-  let g0 = fst (fst (Obj.magic s)) in
-  let h = snd (fst (Obj.magic s)) in
-  let gtox = fst (snd (Obj.magic s)) in
-  let htox = snd (snd (Obj.magic s)) in
-  Obj.magic (((g0, gtox), (h, htox)), ((g0, gtox), (h,
-    (gdot htox (ginv g0)))))
-
-(** val oneOrZeroCipher : ES.coq_PK -> DG.coq_G -> f Sigma.coq_S **)
-
-let oneOrZeroCipher pk c =
-  oneOrZero (Obj.magic (pk, c))
-
-(** val decFactorStatment :
-    ES.coq_PK -> DG.coq_G -> HeliosIACR2018G.coq_G -> f Sigma.coq_S **)
-
-let decFactorStatment pk c d =
-  Obj.magic (pk, ((fst c), d))
-
-type recChalType = __
-
-(** val approvalSigma :
-    (HeliosIACR2018G.coq_G * HeliosIACR2018G.coq_G) list -> recChalType
-    Sigma.form **)
-
-let rec approvalSigma = function
-| [] -> Obj.magic BS.emptyForm
-| _ :: b -> Obj.magic parSigmaProtocol (approvalSigma b) dHTDisForm
-
-(** val decryptionSigma : (((f * f) * f) * f) Sigma.form **)
-
-let decryptionSigma =
-  parSigmaProtocol
-    (parSigmaProtocol (parSigmaProtocol dHTForm dHTForm) dHTForm) dHTForm
-
-(** val approvalSigmaStatment :
-    ES.coq_PK -> DG.coq_G list -> recChalType Sigma.coq_S **)
-
-let rec approvalSigmaStatment pk = function
-| [] -> fst (Obj.magic pk)
-| a :: b -> Obj.magic ((approvalSigmaStatment pk b), (oneOrZeroCipher pk a))
-
-(** val decryptionSigmaStatment :
-    (HeliosIACR2018G.coq_G * HeliosIACR2018G.coq_G) ->
-    (((ES.coq_PK * ES.coq_PK) * ES.coq_PK) * ES.coq_PK) ->
-    (((HeliosIACR2018G.coq_G * HeliosIACR2018G.coq_G) * HeliosIACR2018G.coq_G) * HeliosIACR2018G.coq_G)
-    -> (((f * f) * f) * f) Sigma.coq_S **)
-
-let decryptionSigmaStatment c y d =
-  Obj.magic ((((decFactorStatment (fst (fst (fst y))) c (fst (fst (fst d)))),
-    (decFactorStatment (snd (fst (fst y))) c (snd (fst (fst d))))),
-    (decFactorStatment (snd (fst y)) c (snd (fst d)))),
-    (decFactorStatment (snd y) c (snd d)))
+module ElGamalWikstrom =
+ WikstromMixnet(HeliosIACR2018G)(DualGroup)(HeliosIACR2018G)(HeliosIACR2018F)(HeliosIACR2018F)(HeliosIACR2018VS)(DVS)(MVS)(ES)(N)

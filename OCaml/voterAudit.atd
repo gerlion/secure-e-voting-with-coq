@@ -1,0 +1,31 @@
+type choice = {
+  alpha : string;
+  beta : string;
+}  <ocaml field_prefix="choice_">
+
+type commitment = {
+  a : string;
+  b : string;
+}
+
+type proof = {
+  challenge : string;
+  commitment : commitment;
+  response : string;
+}
+
+type answer = {
+  choices : choice list;
+  individual_proofs : proof list list;
+  overall_proof : string nullable;
+  answer : string list;
+  randomness : string list;
+}
+
+
+type voterAudit = {
+  answers : answer list;
+  election_hash : string;
+  election_uuid : string;
+}
+

@@ -18,7 +18,8 @@ Require Import Coq.Arith.Wf_nat.
 Require Import primeP. 
 Require Import primeQ.
 Require Import Coq.ZArith.Znat.
-Require Import groups.
+Require Import Groups.groups.
+Require Import Groups.vectorspace.
 Require Import Coq.PArith.Pnat.
 
 Open Scope Z_scope.
@@ -55,6 +56,7 @@ Proof.
 Qed. 
 
 (* The base field *)
+
 Theorem znz_bij: forall P : Z, forall a b : (znz P), a = b <-> val P a = val P b.
   split. intros; subst; auto.
    intros. destruct a, b. cbn in *.
@@ -133,7 +135,7 @@ Definition Fadd : F -> F -> F  := (add _).
   
 Definition Fzero : F := (zero _).
 
-Definition Fbool_eq (a b :F) : bool := Z.eqb (val Q a) (val Q b).
+Definition Fbool_eq_init (a b :F) : bool := Z.eqb (val Q a) (val Q b).
 
 Definition Fsub : F -> F -> F := (sub _).
 
@@ -477,7 +479,11 @@ Defined.
 Definition Gone : G.
   exists (one P). unfold inQSubGroup. rewrite binary_power_ok in *.  apply one_to_x_one. 
 Defined.
-Definition Gbool_eq (a b : G) : bool  := Z.eqb (val P (proj1_sig a)) (val P (proj1_sig b)).
+(* Definition twoEqTwo : 2 = 2 mod P. auto. Defined.
+Definition Ggen : G.
+  exists (mkznz P 2 twoEqTwo). unfold inQSubGroup. rewrite binary_power_ok in *. auto.
+Defined. *)
+Definition Gbool_eq_init (a b : G) : bool  := Z.eqb (val P (proj1_sig a)) (val P (proj1_sig b)).
 Definition Ginv (a : G) : G.
   pose (proj1_sig a).  pose (proj2_sig a).
   exists (inv P f). cbn in *. unfold inQSubGroup in *. rewrite binary_power_ok in *. rewrite <- inv_closed. apply i.
@@ -572,55 +578,150 @@ Proof.
   pose Fpfield. destruct f. apply F_R. apply Q_nat_nonzero.
 Qed.
 
-
-(* The vector space *)
-
-Instance HeliosIACR2018 : VectorSpace F Fadd Fzero Fbool_eq Fsub Finv Fmul Fone
-  FmulInv Fdiv G Gdot Gone Gbool_eq Ginv op := {}.
+Lemma beq_F_ok :
+  forall x y : F, Fbool_eq_init x y = true <-> x = y.
 Proof.
-  apply Ffield. constructor. constructor. constructor. 
-  + intros. rewrite eq_proj. do 2 rewrite Gdot_FpMul_eq. rewrite Rmul_assoc.
-  do 2 rewrite <- Gdot_FpMul_eq. trivial. apply Fpfield.
-  + intros. rewrite eq_proj. rewrite Gdot_FpMul_eq. rewrite Rmul_1_l.
-  trivial. apply Fpfield.
-  + intros. rewrite eq_proj. rewrite Gdot_FpMul_eq. rewrite Rmul_comm.
-   rewrite Rmul_1_l. trivial. apply Fpfield. apply Fpfield.
-  + split. intros. unfold Gbool_eq in H. apply Z.eqb_eq in H. 
-    rewrite eq_proj. apply znz_bij. apply H.
-    intros.  rewrite H. unfold Gbool_eq. apply Z.eqb_eq. trivial.
-  + split. intros. unfold not. intros. rewrite eq_proj in H0. rewrite (znz_bij P) in H0.
-    apply Z.eqb_eq in H0. unfold Gbool_eq in H. 
-    apply (eq_true_false_abs (val P (proj1_sig a) =? val P (proj1_sig b))).
-    apply H0. apply H. intros. unfold Gbool_eq. rewrite Z.eqb_neq. rewrite eq_proj in H.
-    unfold not. intros. apply znz_bij in H0. auto.
-  + intros. rewrite eq_proj. rewrite Gdot_FpMul_eq. symmetry. cbn in *.
-     rewrite Finv_l. trivial. apply Fpfield. apply (inQSubGroup_zero_free (proj1_sig x)(Z.to_nat Q)).
-     rewrite <- binary_power_ok. apply (proj2_sig x). apply Q_nat_nonzero.
-  + intros. rewrite eq_proj. rewrite Gdot_FpMul_eq. symmetry. cbn in *. rewrite Rmul_comm.
-     rewrite Finv_l. trivial. apply Fpfield. apply (inQSubGroup_zero_free (proj1_sig x)(Z.to_nat Q)).
-     rewrite <- binary_power_ok. apply (proj2_sig x). apply Q_nat_nonzero. apply Fpfield.
-  + intros. rewrite eq_proj. rewrite Gdot_FpMul_eq. cbn in *.  rewrite Rmul_comm.
-     trivial. apply Fpfield.
-  + intros. rewrite eq_proj. rewrite op_binary_power_eq. do 2 rewrite Gdot_FpMul_eq.
-    do 2 rewrite op_binary_power_eq. rewrite binary_power_ok.
-   rewrite dist_power_over_mult. do 2 rewrite binary_power_ok. trivial.
-  + intros. rewrite eq_proj. rewrite Gdot_FpMul_eq. do 3 rewrite op_binary_power_eq.
-     do 3 rewrite binary_power_ok. rewrite <- dist_power_over_add.
-     rewrite Fadd_eq_Nadd_mod. do 2 rewrite <- binary_power_ok. apply dist_power_over_add_2.
-  + intros.  rewrite eq_proj. do 3 rewrite op_binary_power_eq.
-    rewrite <- dist_power_over_mul_2. rewrite Fmul_eq_Nmul. rewrite dist_power_over_add_2.
-    trivial.
-  + intros. rewrite eq_proj.  rewrite op_binary_power_eq. cbn. rewrite Pos2Nat.inj_1.
-    cbn. field; auto.
-  + intros. rewrite eq_proj.  rewrite op_binary_power_eq. cbn. trivial.
-  + split. intros. unfold Fbool_eq in H. apply Z.eqb_eq in H. apply znz_bij. apply H.
-    intros.  rewrite H. unfold Gbool_eq. apply Z.eqb_eq. trivial.
-  + split. intros. unfold not. intros. rewrite (znz_bij Q) in H0. apply Z.eqb_eq in H0.
-    unfold Gbool_eq in H.  apply (eq_true_false_abs (val Q a =? val Q b)).
-    apply H0. apply H. intros. unfold Fbool_eq. rewrite Z.eqb_neq.
-    unfold not. intros. apply znz_bij in H0. auto.
+  split. intros. unfold Fbool_eq_init in H. apply Z.eqb_eq in H. apply znz_bij. apply H.
+    intros.  rewrite H. unfold Gbool_eq_init. apply Z.eqb_eq. trivial.
 Qed.
 
 
-
 End HeliosIACR2018.
+
+(* Group *)
+
+Module HeliosIACR2018G <: GroupSig.
+  Definition G := G.
+  Definition Gdot := Gdot.
+  Definition Gone := Gone.
+  Definition Gbool_eq := Gbool_eq_init.
+  Definition Ginv := Ginv.
+
+  Lemma module_abegrp : AbeGroup G Gdot Gone Gbool_eq Ginv.
+  Proof.
+    constructor. constructor. constructor. 
+    + intros. rewrite eq_proj. do 2 rewrite Gdot_FpMul_eq. rewrite Rmul_assoc.
+    do 2 rewrite <- Gdot_FpMul_eq. trivial. apply Fpfield.
+    + intros. rewrite eq_proj. rewrite Gdot_FpMul_eq. rewrite Rmul_1_l.
+    trivial. apply Fpfield.
+    + intros. rewrite eq_proj. rewrite Gdot_FpMul_eq. rewrite Rmul_comm.
+     rewrite Rmul_1_l. trivial. apply Fpfield. apply Fpfield.
+    + split. intros. unfold Gbool_eq in H. apply Z.eqb_eq in H. 
+      rewrite eq_proj. apply znz_bij. apply H.
+      intros.  rewrite H. unfold Gbool_eq. apply Z.eqb_eq. trivial.
+    + split. intros. unfold not. intros. rewrite eq_proj in H0. rewrite (znz_bij P) in H0.
+      apply Z.eqb_eq in H0. unfold Gbool_eq in H. 
+      apply (eq_true_false_abs (val P (proj1_sig a) =? val P (proj1_sig b))).
+      apply H0. apply H. intros. unfold Gbool_eq. unfold Gbool_eq_init.
+      rewrite Z.eqb_neq. rewrite eq_proj in H.
+      unfold not. intros. apply znz_bij in H0. auto.
+    + intros. rewrite eq_proj. rewrite Gdot_FpMul_eq. symmetry. cbn in *.
+       rewrite Finv_l. trivial. apply Fpfield. apply (inQSubGroup_zero_free (proj1_sig x)(Z.to_nat Q)).
+       rewrite <- binary_power_ok. apply (proj2_sig x). apply Q_nat_nonzero.
+    + intros. rewrite eq_proj. rewrite Gdot_FpMul_eq. symmetry. cbn in *. rewrite Rmul_comm.
+       rewrite Finv_l. trivial. apply Fpfield. apply (inQSubGroup_zero_free (proj1_sig x)(Z.to_nat Q)).
+       rewrite <- binary_power_ok. apply (proj2_sig x). apply Q_nat_nonzero. apply Fpfield.
+    + intros. rewrite eq_proj. rewrite Gdot_FpMul_eq. cbn in *.  rewrite Rmul_comm.
+       trivial. apply Fpfield.
+  Qed.
+
+End HeliosIACR2018G.
+
+(* Field *)
+
+Module HeliosIACR2018F <: FieldSig.
+  Definition F := F.
+  Definition Fadd := Fadd.
+  Definition Fzero := Fzero.
+  Definition Fbool_eq :=Fbool_eq_init.
+  Definition Fsub := Fsub.
+  Definition Finv := Finv.
+  Definition Fmul := Fmul.
+  Definition Fone := Fone.
+  Definition FmulInv := FmulInv.
+  Definition Fdiv := Fdiv.
+
+  Lemma vs_field : field_theory Fzero Fone Fadd Fmul Fsub Finv Fdiv FmulInv (@eq F).
+  Proof.
+    apply Ffield.
+  Qed.
+  
+  Lemma module_ring : ring_theory  Fzero Fone Fadd Fmul Fsub Finv (@eq F).
+  Proof.
+    apply vs_field.
+  Qed.
+
+  Lemma F_bool_eq_corr: forall a b : F, Fbool_eq a b = true <-> a=b.
+  Proof.
+    apply beq_F_ok.
+  Qed.
+
+  Lemma F_bool_neq_corr: forall a b : F, Fbool_eq a b = false <-> a <> b.
+  Proof.
+    split. intros. unfold not. intros. rewrite (znz_bij Q) in H0. apply Z.eqb_eq in H0.
+      unfold Fbool_eq in H.  apply (eq_true_false_abs (val Q a =? val Q b)).
+      apply H0. apply H. intros. unfold Fbool_eq. unfold Fbool_eq_init.
+      rewrite Z.eqb_neq. unfold not. intros. apply znz_bij in H0. auto.
+  Qed.
+  
+  Add Field vs_field : vs_field.
+  Add Ring module_ring : module_ring.
+End HeliosIACR2018F.
+
+(* The vector space *)
+
+Module HeliosIACR2018VS <: VectorSpaceSig HeliosIACR2018G HeliosIACR2018F.
+
+  Definition op := op.
+
+  Lemma mod_dist_Gdot : forall (r : F) (x y : G), op (Gdot x y) r = Gdot (op x r) (op y r).
+  Proof.
+      intros. rewrite eq_proj. rewrite op_binary_power_eq. do 2 rewrite Gdot_FpMul_eq.
+      do 2 rewrite op_binary_power_eq. rewrite binary_power_ok.
+     rewrite dist_power_over_mult. do 2 rewrite binary_power_ok. trivial.
+  Qed.
+
+  Lemma mod_dist_Fadd : forall (r s : F) (x : G), op x (Fadd r s) = Gdot (op x r) (op x s).
+  Proof.
+       intros. rewrite eq_proj. rewrite Gdot_FpMul_eq. do 3 rewrite op_binary_power_eq.
+       do 3 rewrite binary_power_ok. rewrite <- dist_power_over_add.
+       rewrite Fadd_eq_Nadd_mod. do 2 rewrite <- binary_power_ok. apply dist_power_over_add_2.
+  Qed.
+
+  Lemma mod_dist_Fmul : forall (r s: F) (x : G), op x (Fmul r s) = op (op x s) r.
+  Proof.
+      intros.  rewrite eq_proj. do 3 rewrite op_binary_power_eq.
+      rewrite <- dist_power_over_mul_2. rewrite Fmul_eq_Nmul. rewrite dist_power_over_add_2.
+      trivial.
+  Qed.
+
+  Lemma mod_id : forall (x : G), op x Fone = x.
+  Proof.
+    intros. rewrite eq_proj.  rewrite op_binary_power_eq. cbn. rewrite Pos2Nat.inj_1.
+      cbn. apply Fpfield.
+  Qed.
+    
+  Lemma mod_ann : forall (x : G), op x Fzero = Gone.
+  Proof.
+     intros. rewrite eq_proj.  rewrite op_binary_power_eq. cbn. 
+     trivial.
+  Qed.
+
+  Infix "+" := Fadd.
+  Infix "*" := Fmul.
+  Notation "x / y" := (Fmul x (FmulInv y)). 
+  Notation "0" := Fzero.
+  Notation "1" := Fone.
+  Notation "- x" :=  (Finv x).
+  Notation "x - y" := (x + (- y)).
+
+  Infix "o" := Gdot (at level 50) .
+  Notation "- x" := (Ginv x).
+
+  Infix "^" := op.
+
+End HeliosIACR2018VS.
+
+
+
+

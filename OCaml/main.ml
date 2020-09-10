@@ -5,6 +5,8 @@ open Voterlist_t
 open Voterlist_j
 open Authority_t
 open Authority_j
+open VoterAudit_t
+open VoterAudit_j
 
 (* try to pattern matching on Voter_t = Voter_j.voter_of_string vt. and call the functions from Lib *) 
 let _ =
@@ -17,11 +19,21 @@ let _ =
   let vtlistjson = Yojson.Basic.Util.to_list vtjson in
   let vlist = List.map (fun x -> Voter_j.voter_of_string (Yojson.Basic.to_string x)) vtlistjson in
 
+  Format.printf "%s\n" "Voters loaded";
+
+  let auditFile  = BatFile.open_in "voters/audit.json" in
+  let auditstring = BatIO.read_all auditFile in
+  let audit = VoterAudit_j.voterAudit_of_string auditstring in
+
+  Format.printf "%s\n" "Audit data loaded";
+
   let authorityFile = BatFile.open_in "authority.json" in
   let authstring = BatIO.read_all authorityFile in
   let authjson = Yojson.Basic.from_string authstring in
   let authlistjson = Yojson.Basic.Util.to_list authjson in
   let authlist = List.map (fun x -> Authority_j.authority_of_string (Yojson.Basic.to_string x)) authlistjson in
+
+  Format.printf "%s\n" "Authorities loaded";
 
   (* Code to print all the data *)
   (* List.map (fun x -> Format.printf "%s\n" (show_voter x)) vlist;
@@ -36,6 +48,14 @@ let _ =
 
   Format.printf "%s\n" "Data and keys loaded";
 
+  let time f x =
+    let t = Sys.time() in
+    let fx = f x in
+    Printf.printf "Execution time: %fs\n" (Sys.time() -. t);
+    f x in
+
+  Format.printf "%s\n" (Big_int.to_string (time (Lib.op0 g) Lib.q));
+
   let pks = List.map (fun x -> (Big_int.of_string x.public_key.y)) authlist in
 
   let pk1 = List.nth pks 0 in
@@ -49,7 +69,11 @@ let _ =
   (* Setup the sigma protocol for 7 choices *)
   let sigmaCorrectEncryption =  Lib.approvalSigma [(g, pk); (g, pk); (g, pk);(g, pk);(g, pk);(g, pk);(g, pk)] in
 
-  let pairFromChoice = (fun x ->
+  let pairFromChoice = (fun (x : Voter_t.choice) ->
+    (Big_int.of_string x.choice_alpha, Big_int.of_string x.choice_beta)
+  ) in
+
+  let pairFromChoiceAudit = (fun (x : VoterAudit_t.choice) ->
     (Big_int.of_string x.choice_alpha, Big_int.of_string x.choice_beta)
   ) in
 
@@ -59,7 +83,7 @@ let _ =
     let proof1 = List.nth (List.nth x.individual_proofs n) 1 in
 
     let s0 = ((g,Big_int.of_string choice.choice_alpha),(pk, Big_int.of_string choice.choice_beta)) in
-    let s1 = ((g,Big_int.of_string choice.choice_alpha),(pk, Lib.mdot (Big_int.of_string choice.choice_beta) (Lib.minv g))) in
+    let s1 = ((g,Big_int.of_string choice.choice_alpha),(pk, Lib.gdot (Big_int.of_string choice.choice_beta) (Lib.ginv g))) in
 
     let c0 = (Big_int.of_string proof0.commitment.a, Big_int.of_string proof0.commitment.b) in
     let c1 = (Big_int.of_string proof1.commitment.a, Big_int.of_string proof1.commitment.b) in
@@ -70,7 +94,7 @@ let _ =
     let t0 = Big_int.of_string proof0.response in
     let t1 = Big_int.of_string proof1.response in
 
-    Obj.magic ((((s0,s1),(c0,c1)),Lib.radd e0 e1),((t0,e0),t1))
+    Obj.magic ((((s0,s1),(c0,c1)),Lib.fadd e0 e1),((t0,e0),t1))
   ) in
  
   let proofFromProof0 = (fun g pk (x : Voter_t.answer) n ->
@@ -88,7 +112,7 @@ let _ =
     let choice = List.nth x.choices n in
     let proof = List.nth (List.nth x.individual_proofs n) 1 in
 
-    let s = ((g,Big_int.of_string choice.choice_alpha),(pk, Lib.mdot (Big_int.of_string choice.choice_beta) (Lib.minv g))) in
+    let s = ((g,Big_int.of_string choice.choice_alpha),(pk, Lib.gdot (Big_int.of_string choice.choice_beta) (Lib.ginv g))) in
     let c = (Big_int.of_string proof.commitment.a, Big_int.of_string proof.commitment.b) in
     let e = Big_int.of_string proof.challenge in
     let t = Big_int.of_string proof.response in
@@ -105,7 +129,7 @@ let _ =
   let challengeFromProof  = (fun (x : Voter_t.proof list) ->
     let proofForZero = List.nth x 0 in
     let proofForOne = List.nth x 1 in
-    Lib.radd (Big_int.of_string proofForZero.challenge)
+    Lib.fadd (Big_int.of_string proofForZero.challenge)
         (Big_int.of_string proofForOne.challenge)) in
 
   let responseFromProof  = (fun (x : Voter_t.proof list) ->
@@ -116,19 +140,28 @@ let _ =
       Big_int.of_string proofForOne.response)
   ) in
 
-  let getChoices = (fun x ->
+  let getChoices = (fun (x : Voter_t.voter) ->
     let answer = List.hd x.answers in
     let choices = answer.choices in
     List.map pairFromChoice choices
   ) in
 
-  let getStatmentOfCorrectEncrytion = (fun x ->
-        Lib.approvalSigmaStatment g pk (List.rev (getChoices x))
+  let getChoicesAudit = (fun (x : VoterAudit_t.answer) ->
+    let choices = x.choices in
+    List.map pairFromChoiceAudit choices
+  ) in
+
+  let getRandomness = (fun x ->
+    List.map Big_int.of_string x.randomness
+  ) in
+
+  let getStatmentOfCorrectEncrytion = (fun (x : Voter_t.voter) ->
+        Lib.approvalSigmaStatment (g,pk) (List.rev (getChoices x))
   ) in
 
   let mOne = Big_int.of_string "1" in
 
-  let getCommitmentOfCorrectEncrytion = (fun x ->
+let getCommitmentOfCorrectEncrytion = (fun (x : Voter_t.voter) ->
     let answer = List.hd x.answers in
     let individual_proofs = answer.individual_proofs in
     let cc = List.map commitFromProof individual_proofs in
@@ -136,14 +169,14 @@ let _ =
         List.nth cc 3), List.nth cc 4), List.nth cc 5), List.nth cc 6)
   ) in
 
-  let getChallengeOfCorrectEncrytion = (fun x ->
+  let getChallengeOfCorrectEncrytion = (fun (x : Voter_t.voter) ->
     let answer = List.hd x.answers in
     let individual_proofs = answer.individual_proofs in
     let cc = List.map challengeFromProof individual_proofs in
     (((((((mOne,List.nth cc 0), List.nth cc 1), List.nth cc 2), List.nth cc 3), List.nth cc 4), List.nth cc 5), List.nth cc 6)
   ) in
 
-  let getResponsOfCorrectEncrytion = (fun x ->
+  let getResponsOfCorrectEncrytion = (fun (x : Voter_t.voter) ->
     let answer = List.hd x.answers in
     let individual_proofs = answer.individual_proofs in
     let cc = List.map responseFromProof individual_proofs in
@@ -151,7 +184,7 @@ let _ =
   ) in
 
   let addTwoCiphertexts = (fun x y ->
-     ((Lib.mdot (Lib.fst x) (Lib.fst y)),(Lib.mdot (Lib.snd x) (Lib.snd y)))
+     ((Lib.gdot (Lib.fst x) (Lib.fst y)),(Lib.gdot (Lib.snd x) (Lib.snd y)))
   ) in
 
   let addTwoListsOfCiphertexts = (fun x y ->
@@ -178,14 +211,14 @@ let _ =
   Format.print_flush ();
 
 
-  List.mapi (fun i x ->
+ List.mapi (fun i (x : Voter_t.voter) ->
 
     let s = getStatmentOfCorrectEncrytion x in
     let c = getCommitmentOfCorrectEncrytion x in
     let e = getChallengeOfCorrectEncrytion x in
     let t = getResponsOfCorrectEncrytion x in
 
-    let result = sigmaCorrectEncryption.coq_V1 (Obj.magic (((s, c), e), t)) in
+    let result = Lib.Sigma.coq_V1 sigmaCorrectEncryption (Obj.magic (((s, c), e), t)) in
 
     Format.printf "%i: %b\n" i result;
 
@@ -195,8 +228,26 @@ let _ =
   ) vlist;
 
 
+ (***
+    *   Check audit ballots
+    *
+    *)
 
+  Format.printf "%s\n" "Audit Ballots";
 
+ List.map (fun (x : VoterAudit_t.answer) ->
+
+    let c = getChoicesAudit x in
+    let randomness = getRandomness x in
+
+    let choiceIndex = [0;1;2;3;4;5;6] in
+
+    List.map (fun i ->
+        let result = Lib.ALES.decryptsToExt (g,pk) (List.nth c i) g (List.nth randomness i) in
+         Format.printf "%b\n"  result;
+    ) choiceIndex;
+
+ ) audit.answers;
 
   (***
     *   End check ballots
@@ -255,7 +306,7 @@ let _ =
     *
     *)
 
-  let pkTuple = (((List.nth pks 0, List.nth pks 1), List.nth pks 2), List.nth pks 3) in
+  let pkTuple = ((((g,List.nth pks 0), (g,List.nth pks 1)), (g,List.nth pks 2)), (g,List.nth pks 3)) in
 
   (* We create a list of choice index to map over *)
   let choiceIndex = [0;1;2;3;4;5;6] in
@@ -268,11 +319,11 @@ let _ =
 
         let sigmaCorrectDecryption =  Lib.decryptionSigma in
 
-        Format.printf "%s\n" "Preparing decrytion sigma proof";
+        Format.printf "%s\n" "Preparing decryption sigma proof";
 
         Format.print_flush ();
 
-        let sd = Lib.decryptionSigmaStatment g (List.nth summations i) pkTuple decFacTuple in
+        let sd = Lib.decryptionSigmaStatment (List.nth summations i) pkTuple decFacTuple in
         let cd = getCommitmentOfCorrectDecrytionN authlist i in
         let ed = getChallengeOfCorrectDecrytionN authlist i in
         let td = getResponsOfCorrectDecrytionN authlist i in
