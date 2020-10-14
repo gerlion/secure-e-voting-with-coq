@@ -8,6 +8,9 @@ VectorUtil.vo : VectorUtil.v
 makeGroups : VectorUtil.vo 
 	make -C Groups
 
+makeElectionGuard : basicSigmas.vo
+	make -C ElectionGuard
+
 #compile primeQ
 primeQ.vo : primeQ.v
 
@@ -24,6 +27,8 @@ sigmaprotocolPlus.vo : basicSigmas.vo sigmaprotocolPlus.v
 
 wikstromMatrix.vo : basicSigmas.vo wikstromMatrix.v
 
+PPATC.vo : wikstromMatrix.vo PPATC.v
+
 #compile HeliosIACR2018.v and other dependencies
 HeliosIACR2018.vo : primeQ.vo primeP.vo HeliosIACR2018.v
 
@@ -38,4 +43,4 @@ ExtractionMixnet.vo : mixnetTest.vo ExtractionMixnet.v
 
 #run clean
 clean :
-	rm -rf *.vo *.vos *.vok *.glob .*.aux && cd Groups && make clean 
+	rm -rf *.vo *.vos *.vok *.glob .*.aux .*.cache && cd Groups && make clean && cd .. && cd ElectionGuard && make clean

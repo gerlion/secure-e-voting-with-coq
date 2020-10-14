@@ -15,6 +15,25 @@ Set Implicit Arguments.
 
 Section VectorUtil.
   
+  Lemma Vhead_Vremove_last : forall (A : Type)(n : nat)(a : vector A (S (S n))),
+    Vhead (Vremove_last a) = Vhead a.
+  Proof.
+    intros. do 2 rewrite Vhead_nth. rewrite Vnth_remove_last. apply Vnth_eq.
+    trivial.
+  Qed.
+
+  Lemma Vhead_cons : forall (A : Type)(n : nat)(a : A)(b : vector A n),
+    Vhead (Vcons a b) = a.
+  Proof.
+    intros. auto.
+  Qed.
+
+  Lemma Vtail_cons : forall (A : Type)(n : nat)(a : A)(b : vector A n),
+    Vtail (Vcons a b) = b.
+  Proof.
+    intros. auto.
+  Qed.
+
   Lemma Vtail_imp : forall (A : Type)(n : nat)(a : A)(b : vector A n)
       (c : vector A (S n)),
     Vcons a b = c -> b = Vtail c.
@@ -60,11 +79,26 @@ Section VectorUtil.
     intros. rewrite H. trivial.
   Qed.
 
+  Lemma Vfold_left_eq3 : forall (n : nat)(A B : Type) (f f' : A->B->A)
+    (v v' : vector B n)(a a' : A),
+    f = f' -> v = v' -> a = a' -> Vfold_left f a v = Vfold_left f' a' v'.
+  Proof.
+    intros. subst. trivial.
+  Qed.
+
   Lemma Vcons_map2 : forall (A B C : Type) (f: A->B->C) (n :nat)
           (v : vector A n) (v' : vector B n)(a : A)(b : B),
       Vmap2 f (Vcons a v) (Vcons b v') = Vcons (f a b) (Vmap2 f v v').
   Proof. 
     intros. refl. 
+  Qed.
+
+  Lemma Vmap2_tail : forall (A B C : Type) (f: A->B->C) (n :nat)
+          (v : vector A (S n)) (v' : vector B (S n)),
+    Vmap2 f (Vtail v)  (Vtail v') = Vtail (Vmap2 f v v').
+  Proof.
+   intros. apply Veq_nth. intros. rewrite Vnth_tail. rewrite Vnth_map2.
+   trivial.
   Qed.
 
   Lemma Vadd_map2 : forall (A B C : Type) (f: A->B->C) (n :nat)
@@ -82,6 +116,15 @@ Section VectorUtil.
     intros. apply Veq_nth. intros. rewrite Vnth_map2. do 3 rewrite Vnth_app.
     destruct (le_gt_dec n i). rewrite Vnth_map2. trivial.
     rewrite Vnth_map2. trivial.
+  Qed.
+
+  Lemma Vapp_map : forall (A B : Type) (f: A->B) (n n' :nat)
+          (v : vector A n)(u : vector A n'),
+    Vmap f (Vapp v u) = Vapp (Vmap f v) (Vmap f u).
+  Proof.
+    intros. apply Veq_nth. intros. rewrite Vnth_map. do 2 rewrite Vnth_app.
+    destruct (le_gt_dec n i). rewrite Vnth_map. trivial.
+    rewrite Vnth_map. trivial.
   Qed.
 
   Lemma Vcons_map : forall (A B : Type) (f: A->B) (n :nat)
@@ -199,6 +242,13 @@ Section VectorUtil.
     rewrite Vnth_cons_head.  lia. trivial.
     intros. rewrite Vnth_cons_tail. intros. rewrite Vbuild_nth.
     apply Vnth_eq. lia. lia.
+  Qed.
+
+  Lemma rev_Vtail : forall (A : Type)(n : nat)(a : vector A (S n)),
+    rev (Vtail a) = Vremove_last (rev a).
+  Proof.
+    intros. apply Veq_nth. intros. rewrite Vnth_remove_last. 
+  do 2 rewrite Vbuild_nth. rewrite Vnth_tail. apply Vnth_eq. lia.
   Qed.
 
   Lemma rev_switch: forall (A : Type)(n : nat)(a b : vector A n),
@@ -678,6 +728,18 @@ Section VectorUtil.
     assert False. lia. contradiction. rewrite Vnth_tail. apply Vnth_eq. trivial.
   Qed.
 
+  Lemma Vbreak_Vtail : forall n n' A (v : vector A (S n+n')),
+    Vtail (Vbreak v).1 = (Vbreak (Vtail v)).1.
+  Proof.
+    intros. apply Veq_nth. intros. rewrite Vnth_tail. trivial.
+  Qed.
+
+  Lemma Vbreak_Vtail_clear : forall n n' A (v : vector A (S n+n')),
+    (Vbreak (Vtail v)).2 = (Vbreak v).2.
+  Proof.
+    intros. cbn. trivial.
+  Qed.
+
   Lemma Vapp_eq_intro_cast : forall n1 A (v1 v1' : vector A n1) n2 n2'
     (v2 v2' : vector A n2)(h : n2 = n2')(h' : n1+n2 = n1+n2'),
      v1 = v1' -> v2 = v2' -> Vcast (Vapp v1 v2) h'  = Vapp v1' (Vcast v2' h).
@@ -695,8 +757,8 @@ Section VectorUtil.
     intros. subst. cbn. rewrite Vcast_refl. trivial.
   Qed.
  
-  Lemma Vapp_eq_cast : forall n1 A (v1 : vector A n1) n2 n2'
-    (v2 : vector A n2)(h : n2 = n2')(h' : n1+n2 = n1+n2'),
+  Lemma Vapp_eq_cast : forall n2 n2' (h : n2 = n2') n1 A (v1 : vector A n1) 
+    (v2 : vector A n2)(h' : n1+n2 = n1+n2'),
     Vcast (Vapp v1 v2) h'  = Vapp v1 (Vcast v2 h).
   Proof.
     intros. subst. cbn. rewrite Vcast_refl. trivial.
@@ -731,6 +793,9 @@ Section VectorUtil.
   Proof.
     intros. simpl. auto.
   Qed.
+
+  Ltac simpl_prod := repeat progress (try rewrite Prod_left_replace; 
+      try rewrite Prod_right_replace).
 
   Lemma Vhead_app : forall n m A 
       (a : vector A (S n))(b : vector A m),
@@ -788,6 +853,58 @@ Section VectorUtil.
     rev (Vhead v) = Vhead (Vmap (fun x => rev x) v).
   Proof.
     intros. rewrite Vhead_map. trivial.
+  Qed.
+
+  Lemma Vbreak_vmap_1 : forall (A B : Type)(f: A -> B) n n'
+    (a : vector A (n+n')),
+    Vmap f (Vbreak a).1  = (Vbreak (Vmap f a)).1.
+  Proof.
+    intros. apply Veq_nth. intros. rewrite Vnth_map. rewrite Vnth_vbreak_1.
+    intros. rewrite Vnth_vbreak_1. rewrite Vnth_map. trivial. lia. 
+  Qed.
+
+  Lemma Vbreak_vmap_2 : forall (A B : Type)(f: A -> B) n n'
+    (a : vector A (n+n')),
+    Vmap f (Vbreak a).2  = (Vbreak (Vmap f a)).2.
+  Proof.
+    intros. apply Veq_nth. intros. rewrite Vnth_map. rewrite Vnth_vbreak_2.
+    intros. rewrite Vnth_vbreak_2. rewrite Vnth_map. trivial. lia. 
+  Qed.
+
+  Lemma Vbreak_vmap2_1 : forall (A B C : Type)(f: A -> B -> C) n n'
+    (a : vector A (n+n'))(b : vector B (n+n')),
+    Vmap2 f (Vbreak a).1 (Vbreak b).1 = (Vbreak (Vmap2 f a b)).1.
+  Proof.
+    intros. apply Veq_nth. intros. rewrite Vnth_map2. rewrite Vnth_vbreak_1.
+    intros. do 2 rewrite Vnth_vbreak_1. rewrite Vnth_map2. trivial. lia. 
+  Qed.
+
+  Lemma Vbreak_vmap2_2 : forall (A B C : Type)(f: A -> B -> C) n n'
+    (a : vector A (n+n'))(b : vector B (n+n')),
+    Vmap2 f (Vbreak a).2 (Vbreak b).2 = (Vbreak (Vmap2 f a b)).2.
+  Proof.
+    intros. apply Veq_nth. intros. rewrite Vnth_map2. rewrite Vnth_vbreak_2.
+    intros. do 2 rewrite Vnth_vbreak_2. rewrite Vnth_map2. trivial. lia. 
+  Qed.
+
+  Lemma Vbreak_Vconst : forall n n' (A : Type)(a : A),
+    Vbreak (Vconst a (n+n')) = (Vconst a n, Vconst a n').
+  Proof.
+    intros. apply injective_projections. simpl. apply Veq_nth. intros.
+    rewrite Vnth_vbreak_1. intros. do 2 rewrite Vnth_const. trivial. lia.
+    apply Veq_nth. intros. rewrite Vnth_vbreak_2. intros. do 2 rewrite Vnth_const.
+    trivial. lia.
+  Qed.
+
+  Lemma Vfold_left_zip : forall n (A B : Type)(v : vector (A*B) n)
+      (acc : A*B)(f : A->A->A)(f' : B->B->B),
+    (Vfold_left (fun a b : A*B => (f a.1 b.1, f' a.2 b.2)) acc v) =
+     (Vfold_left (fun a b => (f a b)) acc.1 (UnzipLeft v),
+        Vfold_left (fun a b => (f' a b)) acc.2 (UnzipRight v)).
+  Proof.
+    intros n A B. induction n. intros. rewrite (Vector_0_is_nil v). 
+    cbn. apply surjective_pairing. intros. rewrite (VSn_eq v). simpl.
+    apply IHn. 
   Qed.
 
 End VectorUtil.

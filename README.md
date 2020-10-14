@@ -1,9 +1,11 @@
 # Secure E-Voting with Coq
-This repository contains the code associated with the CCS 2019 paper
-"Verified verifiers for verifying elections" by Thomas Haines, Rajeev 
-Gore and Mukesh Tiwari which was subsequently expanded upon by
-"Did you mix me? Formally Verifying Verifiable Mix Nets in Electronic Voting" 
-by Thomas Haines, Rajeev Gore and Bhavesh Sharma.
+This repository contains the code associated with ongoing working by Haines et al. on machine checked verifiers for evoting.
+
+The following papers are associated with the code here:
+* the CCS 2019 paper "Verified verifiers for verifying elections" by Thomas Haines, Rajeev Gore and Mukesh Tiwari 
+* the S&P 2021 paper "Did you mix me? Formally Verifying Verifiable Mix Nets in Electronic Voting" by Thomas Haines, Rajeev Gore and Bhavesh Sharma.
+* the NordSec 2020 paper "Machine-checking the universal verifiability of ElectionGuard" by Thomas Haines, Rajeev Gore and Jack Stodart
+* the NordSec 2020 paper "Efficient mixing of arbitrary ballots with everlasting privacy: How to verifiably mix the PPATC scheme" by Kristian Gjøsteen, Thomas Haines and Morten Solberg 
 
 # Summary
 
@@ -58,6 +60,10 @@ Running make ExtractionHelios.vo will prompt Coq to extract the libraries
 Running make wikstromMatrix.vo will prompt Coq to check the proofs
 Running make ExtractionMixnet.vo will prompt Coq to extract the libraries
 (Note, again, that extraction checks the proof of primality for the numbers used in the implementation and is therefore time consuming (1hr). The reader may wish to simply look at the already extracted code)
+## ElectionGuard
+Running make makeElectionGuard will prompt Coq to check the proofs
+## PPATC
+Running make PPATC.vo will prompt Coq to check the proofs
 ## Runtime optimisations
 We suggest the following modification from what is 
 directly extracted from Coq.
@@ -107,8 +113,10 @@ To run
 Copy lib.ml into the OCaml folder
 Running make compile will prompt OCaml to compile  
 Running make run will will verify the election data for Helios IACR 2018  
-
-
+## ElectionGuard
+Go to ElectionGuard/OCaml
+Running make compile will prompt OCaml to compile  
+Running make run will will verify the test election data 
 ## Note: 
 This is not the development repo for the ongoing work.  Place contact 
 Thomas Haines (thomas.haines@ntnu.no) with any questions or for
