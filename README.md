@@ -59,8 +59,7 @@ opam install coq-mathcomp-algebra
 ## Install other dep
 opam install zarith
 opam install batteries 
-opam install yojson 
-opam install atdgen 
+opam pin add atdgen 2.4.1 
 opam install ppx_deriving 
 
 # Coq code
