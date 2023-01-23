@@ -85,6 +85,17 @@ Module MatricesG (Group : GroupSig)(Ring: RingSig)
     trivial.
   Qed.
 
+  Lemma VG_shift : forall n (a b c : VG n),
+    VG_mult a b = c <-> a = VG_mult c (VG_inv b).
+  Proof.
+    pose module_abegrp. intros; split; intros.
+    + apply Veq_nth. intros. rewrite <- H. rewrite Vnth_map2. rewrite Vnth_map.
+    rewrite Vnth_map2. rewrite <- dot_assoc. rewrite <- inv_right. 
+    rewrite one_right. trivial.
+    + apply Veq_nth. intros. rewrite H. do 2 rewrite Vnth_map2. rewrite Vnth_map.
+    rewrite <- dot_assoc. rewrite <- inv_left. rewrite one_right. trivial.
+  Qed.
+
   Lemma Vfold_Gdot_const :  forall (n : nat)(v : vector G n)(a : G),
     forall (h : G),
     (Vfold_left Gdot h v) o a = Vfold_left Gdot (h o a) v.
@@ -167,7 +178,7 @@ Module MatricesG (Group : GroupSig)(Ring: RingSig)
   Lemma reasoningAboutIndexs : forall i : nat,
      (i < 2) -> (i = 0%nat \/ i = 1%nat).
   Proof.
-    intros. induction i. left. trivial. right. omega.
+    intros. induction i. left. trivial. right. lia.
   Qed.
 
   Infix "+" := Fadd.
@@ -213,6 +224,14 @@ Module MatricesG (Group : GroupSig)(Ring: RingSig)
     trivial.
   Qed.
 
+  Lemma VG_prod_cancel : forall (N : nat)(v : VG (S N)),
+    VG_prod v o - VG_prod (Vtail v) = Vhead v.
+  Proof.
+    pose (module_abegrp).
+    intros. rewrite VG_prod_induction. rewrite comm.
+    rewrite dot_assoc. rewrite <- inv_left. rewrite one_left. trivial.
+  Qed.
+
   Lemma VG_prod_induction_double:
     forall(N : nat)(v : VG (S N + S N)),
     VG_prod v = VG_prod (Vtail v) o (Vhead v).
@@ -238,6 +257,15 @@ Module MatricesG (Group : GroupSig)(Ring: RingSig)
     intros.  unfold VG_Sexp. apply Vmap_eq_nth.
     intros. rewrite mod_id. trivial. 
   Qed.
+
+  Lemma VG_Sexp_id_gen : 
+    forall N, forall a (e : VG N), 
+    a = 1 ->
+    VG_Sexp e a = e.
+  Proof.
+    intros. rewrite H. apply VG_Sexp_id.
+  Qed.
+
 
   Lemma VG_Sexp_dis_dot :
   forall N, forall (a b : VG N)(c : F),
@@ -280,6 +308,13 @@ Module MatricesG (Group : GroupSig)(Ring: RingSig)
      a = a' -> VG_Sexp e a  = VG_Sexp e a'.
   Proof.
     intros. rewrite H. trivial. 
+  Qed.
+
+  Lemma VG_Sexp_Sexp : forall N, forall a a' (e : VG N),
+    VG_Sexp (VG_Sexp e a) a' = VG_Sexp e (a*a').
+  Proof.
+    intros. apply Veq_nth. intros. do 3 rewrite Vnth_map. rewrite mod_dist_FMul2.
+    trivial.
   Qed.
 
   Lemma Vbuild_op :
@@ -363,6 +398,13 @@ Module MatricesG (Group : GroupSig)(Ring: RingSig)
     unfold VG_prod, VG_id in IHN. rewrite IHN.
     rewrite one_right. trivial.
   Qed.
+  
+  Lemma VG_Zero_prod_gen : forall N (a : VG N),
+    a = VG_id N ->
+    VG_prod a = Gone.
+  Proof.
+    intros. rewrite H. apply VG_Zero_prod.
+  Qed.
 
   Lemma VG_Zero_prod_build :
     forall (N : nat),
@@ -370,8 +412,8 @@ Module MatricesG (Group : GroupSig)(Ring: RingSig)
   Proof.
     pose (module_abegrp). intros. induction N. cbn. trivial. 
     rewrite (VSn_eq (Vbuild (fun (j : nat) (_ : (j < S N)%nat) => Gone))).
-    simpl. rewrite VG_prod_Vcons. rewrite Vbuild_tail. rewrite IHN.  
-    rewrite one_left. rewrite Vbuild_head. trivial.
+    simpl. rewrite VG_prod_Vcons. rewrite IHN.  
+    rewrite one_left. trivial.
   Qed.
 
   Lemma Vfold_left_one :
@@ -387,13 +429,13 @@ Module MatricesG (Group : GroupSig)(Ring: RingSig)
     forall (n N : nat)(np: n < N)(a : G),
     VG_prod (Vreplace (VG_id N) np a) = a.
   Proof.
-    pose (module_abegrp). induction n. intros. destruct N. omega.
+    pose (module_abegrp). induction n. intros. destruct N. lia.
 
       (* induction base *)
       simpl. rewrite VG_prod_Vcons. rewrite VG_Zero_prod. apply one_left.
 
       (* induction step *)
-      intros. destruct N. omega. simpl. rewrite VG_prod_Vcons.
+      intros. destruct N. lia. simpl. rewrite VG_prod_Vcons.
       rewrite one_right. rewrite (IHn N (lt_S_n np) a0). trivial.
   Qed.
 
@@ -417,6 +459,27 @@ Module MatricesG (Group : GroupSig)(Ring: RingSig)
     apply VG_prod_replace. 
   Qed. 
 
+  Lemma VG_n_exp_id :
+  forall (N : nat)(e : VG N),
+    VG_prod (VG_Pexp e (VF_one N)) =
+       VG_prod e.
+  Proof.
+    intros. apply f_equal. apply Veq_nth. intros. rewrite Vnth_map2. 
+    rewrite Vnth_const. rewrite mod_id. trivial.
+  Qed. 
+
+  Lemma MF_CVmult_one : 
+    forall (N : nat)(m : MF N),
+    Vmap (VF_sum (n:= N)) m =
+    MF_CVmult m (VF_one N).
+  Proof.
+    intros. apply Veq_nth. intros. rewrite Vnth_map.   
+    pose FMatrix.mat_mult_row. unfold FMatrix.get_row in e. unfold MF_CVmult.
+    unfold FMatrix.mat_vec_prod. rewrite FMatrix.Vnth_col_mat. 
+    rewrite FMatrix.mat_mult_spec. rewrite FMatrix.get_col_col_mat.
+    pose VF_inProd_VF_one. unfold VF_inProd in e0. rewrite e0. trivial.
+  Qed.
+
   Lemma VGeq :
     forall (N : nat)(m m' : VG N),
     VG_eq m m' = true <-> m = m'.
@@ -426,8 +489,8 @@ Module MatricesG (Group : GroupSig)(Ring: RingSig)
     apply H. intros. apply bool_eq_corr. apply Veq_nth. intros. 
     apply (Vforall2_elim_nth ip) in H0. apply H0.
     (* part 2 *)
-    intros. rewrite H. unfold VG_eq. rewrite (bVforall2_ok (@eq G)).
-    apply Vforall2_intro_nth. intros. trivial. intros. apply bool_eq_corr.
+    intros. rewrite H. unfold VG_eq. rewrite (bVforall2_ok (@eq G)). 
+     intros. apply bool_eq_corr. apply Vforall2_intro_nth. intros. trivial.
   Qed.
 
   Lemma VG_assoc :
@@ -528,7 +591,7 @@ Module MatricesG (Group : GroupSig)(Ring: RingSig)
     n = 0%nat ->
     VG_prod a = Vhead a.
   Proof. 
-    intros. subst. apply VG_prod_one_vec. 
+    intros. subst. apply VG_prod_one_vec.
   Qed.
 
   Lemma VG_prod_zero :
@@ -600,6 +663,14 @@ Module MatricesG (Group : GroupSig)(Ring: RingSig)
     do 2 rewrite Vbuild_head. do 3 rewrite Vbuild_tail. rewrite IHn. trivial.
   Qed.
 
+  Lemma VF_sum_op : forall (a : G) n (v : VF n),
+    a ^ VF_sum v = VG_prod (Vmap (op a) v).
+  Proof.
+    intros. induction n. rewrite (Vector_0_is_nil v). cbn. rewrite mod_ann. trivial.
+    rewrite VG_prod_induction. rewrite Vtail_map. rewrite <- IHn. rewrite Vhead_map.
+    rewrite <- mod_dist_Fadd. rewrite <- VF_sum_induction. trivial.
+  Qed.
+
   Lemma VG_prod_vbuild : 
     forall (a : G)(n' : nat)(U A : VF n'),
     a ^ VF_inProd U A = 
@@ -619,12 +690,12 @@ Module MatricesG (Group : GroupSig)(Ring: RingSig)
         a ^ (Vnth (Vtail U)  ip * Vnth (Vtail A) ip)))).
     apply Veq_nth. intros. do 2 rewrite Vbuild_nth. do 2 rewrite <- Vnth_tail.
     trivial. rewrite H.  rewrite <- IHn'. rewrite (VSn_eq U). rewrite (VSn_eq A).
-    simpl. rewrite InProd_Vcons. rewrite mod_dist_Fadd. rewrite Vbuild_head. trivial.
+    simpl. rewrite InProd_Vcons. rewrite mod_dist_Fadd. trivial.
   Qed.
 
   Definition PexpMatrix (N : nat)(c : VG N)(e : MF N) : VG N :=
     Vmap (fun row => VG_prod (VG_Pexp c row)) (e).
-
+      
    Theorem VG_prod_VG_Pexp_scale :
     forall (n : nat)(c : VG n)(U : VF n)(s : F),
     VG_prod (VG_Pexp c U) ^ s = 
@@ -920,20 +991,6 @@ Module MatricesG (Group : GroupSig)(Ring: RingSig)
     do 2 rewrite Vnth_map2. rewrite Vnth_map. trivial.
   Qed.
 
-  Lemma Vapp_Vmap2 :
-    forall (A B C : Type)(f : A -> B -> C)(n m : nat)
-    (a : vector A n)(b : vector A m)(c : vector B n)
-    (d : vector B m),
-    Vmap2 f (Vapp a b) (Vapp c d) = Vapp (Vmap2 f a c)
-      (Vmap2 f b d).
-  Proof.
-    intros. apply Veq_nth. intros. rewrite Vnth_map2.
-    case_eq (le_gt_dec n i). intros. 
-    do 3 rewrite Vnth_app. rewrite H. rewrite Vnth_map2. trivial.
-    intros. do 3 rewrite Vnth_app. rewrite H. 
-    rewrite Vnth_map2. trivial.
-  Qed.
-
   Lemma Vapp_VG_prod : forall (n m : nat)
     (a : VG n)(b : VG m),
     VG_prod (Vapp a b) = VG_prod a o VG_prod b.
@@ -1030,6 +1087,13 @@ Module MatricesG (Group : GroupSig)(Ring: RingSig)
     intros. apply Veq_nth. intros. rewrite Vnth_map2.
     rewrite Vnth_const. rewrite VG_Zero_exp. rewrite VG_Zero_prod.
     rewrite Vnth_const. trivial.
+  Qed.
+
+  Lemma VG_Pexp_Pexp : forall n (a : VG n)(b c : VF n),
+    VG_Pexp (VG_Pexp a b) c = VG_Pexp a (VF_mult b c).
+  Proof.
+    intros. apply Veq_nth. intros. do 4 rewrite Vnth_map2. 
+    rewrite <- mod_dist_FMul2. trivial.
   Qed.
 
   Lemma VG_prod_pexp : forall n m (C : vector (VG n) m)(a b : vector (VF n) m),
@@ -1167,14 +1231,170 @@ Module MatricesG (Group : GroupSig)(Ring: RingSig)
   Proof.
     intros. subst. simpl. rewrite double_exp_over_fixed_base.
     rewrite Vmap_prod_pexp. apply f_equal. apply f_equal2; auto.
-    apply Veq_nth. intros. rewrite Vnth_map. rewrite Vhead_nth.
-    rewrite FMatrix.mat_mult_elem. unfold FMatrix.VA.dot_product.
-    rewrite Vfold_left_Fadd_eq. apply Vfold_left_eq.
+    apply Veq_nth. intros. rewrite Vnth_map. rewrite Vbuild_nth.
+    unfold FMatrix.VA.dot_product. rewrite Vfold_left_Fadd_eq. apply Vfold_left_eq.
     apply Veq_nth. intros. rewrite FMatrix.mat_build_nth.
     unfold FMatrix.get_elem, FMatrix.get_row. do 2 rewrite Vnth_map2.
     rewrite Vnth_map. destruct module_ring. rewrite Rmul_comm.
     apply f_equal2. apply Veq_nth3; auto. cbn. rewrite Vcast_refl.
     trivial. rewrite Vnth_map. trivial.
   Qed.
+
+  Lemma PexpMatrix_nth : forall (N : nat)(c : VG N)(e : MF N) i (ip : i < N) x 
+      (xp : x < N),
+    Vnth e ip = FMatrix.VA.id_vec xp ->
+    Vnth (PexpMatrix c e) ip = Vnth c xp.
+  Proof.  
+    pose module_abegrp. intros. rewrite Vnth_map. rewrite H. 
+    rewrite (Veq_app (VG_Pexp c (FMatrix.VA.id_vec xp)) xp). 
+    rewrite <- VG_prod_cast. rewrite Vapp_VG_prod.
+    replace (VG_prod (Vsub (VG_Pexp c (FMatrix.VA.id_vec xp)) (Veq_app_aux2 xp))) with Gone.
+    rewrite one_right. rewrite (VSn_addS (Vsub (VG_Pexp c (FMatrix.VA.id_vec xp)) (Veq_app_aux1 xp))).
+    unfold VG_prod. rewrite Vfold_add. intros. rewrite dot_assoc. trivial.
+    intros. apply comm. replace (Vfold_left Gdot Gone
+  (Vremove_last (Vsub (VG_Pexp c (FMatrix.VA.id_vec xp)) (Veq_app_aux1 xp)))) with
+    Gone. rewrite one_left. rewrite VlastS_nth. rewrite Vnth_sub. rewrite Vnth_map2.
+    rewrite Vnth_replace. rewrite mod_id. apply f_equal. apply le_unique. 
+    (* Clean up *)
+    symmetry. apply VG_Zero_prod_gen. apply Veq_nth. intros. rewrite Vnth_remove_last.
+    rewrite Vnth_sub. rewrite Vnth_map2. rewrite Vnth_replace_neq. lia. do 2 rewrite Vnth_const.
+    rewrite mod_ann. trivial.
+    symmetry. apply VG_Zero_prod_gen. apply Veq_nth. intros. rewrite Vnth_sub. 
+    rewrite Vnth_map2. rewrite Vnth_replace_neq. lia. do 2 rewrite Vnth_const.
+    rewrite mod_ann. trivial.
+  Qed.
+
+  Lemma PexpMatrixId : forall N (c : VG N),
+    PexpMatrix c (MF_id N) = c.
+  Proof.
+    intros. apply Veq_nth. intros. apply PexpMatrix_nth. rewrite Vbuild_nth. trivial.
+  Qed.
+
+  (* This should be in a library but at the moment not apprioate library exist *)
+  Lemma PexpMatrix_Prod : forall (N : nat)(c : VG N)(e : MF N),
+    MFisPermutation e ->
+    VG_prod (PexpMatrix c e) = VG_prod c.
+  Proof.
+    pose module_abegrp. intros. induction N. rewrite (Vector_0_is_nil c). 
+    rewrite (Vector_0_is_nil e). cbn. trivial. 
+    (* Base case complete *)
+    rewrite (VSn_addS c). unfold VG_prod. rewrite Vfold_add. intros. 
+    rewrite dot_assoc. trivial. intros. rewrite comm. trivial. unfold VG_prod in IHN.
+    rewrite <- (IHN (Vremove_last c) (MF_perm_sub e)). rewrite <- VSn_addS.
+    (* We need to break the vector into parts *)
+    pose (proj2_sig (MF_perm_last e)).
+    rewrite (Veq_app (PexpMatrix c e) l). pose VG_prod_cast. unfold VG_prod in e0.
+    rewrite <- e0. pose Vapp_VG_prod. unfold VG_prod in e1. rewrite e1.
+    assert (0+(sval (MF_perm_last e))<= N). assert (sval (MF_perm_last e) < S N). apply l.
+    lia. rewrite (Veq_app (PexpMatrix (Vremove_last c) (MF_perm_sub e)) H0). 
+    rewrite <- e0. rewrite e1. symmetry. rewrite comm. rewrite dot_assoc. apply f_equal2.
+    (* part 1 *)
+    rewrite comm. rewrite <- Vfold_add. apply f_equal. apply Veq_nth. intros.
+    rewrite Vnth_add. destruct (Nat.eq_dec i (0 + sval (MF_perm_last e))).
+    rewrite VlastS_nth. rewrite Vnth_sub. rewrite PexpMatrix_nth; trivial.
+    pose (MF_perm_last_corr e H). rewrite <- e3. apply Veq_nth3. lia. trivial.
+    do 2 rewrite Vnth_sub. do 3 rewrite Vnth_map. rewrite (VSn_addS (VG_Pexp c 
+    (Vnth e (Vnth_sub_aux 0 (Veq_app_aux1 l) ip)))). unfold VG_prod. rewrite Vfold_add.
+    intros. rewrite dot_assoc. trivial. intros. apply comm. rewrite VlastS_nth.
+    rewrite Vnth_map2. rewrite MF_perm_clear_nth; trivial. rewrite mod_ann.
+    rewrite one_right. apply f_equal. apply Veq_nth. intros. rewrite Vnth_remove_last.
+    do 2 rewrite Vnth_map2. do 2 rewrite Vnth_remove_last. apply f_equal.
+    rewrite Vremove_correct_left. lia. apply Veq_nth3. trivial. apply Vnth_eq. trivial.
+    (* clean up for part 1 *)
+    intros. rewrite dot_assoc. trivial. intros. apply comm.
+    (* part 2 *)
+    apply f_equal. apply Veq_nth. intros. do 2 rewrite Vnth_sub. do 3 rewrite Vnth_map.
+    rewrite (VSn_addS ((VG_Pexp c (Vnth e (Vnth_sub_aux (S (sval (MF_perm_last e))) (Veq_app_aux2 l) ip))))).
+    rewrite VG_prod_add. rewrite VlastS_nth. rewrite Vnth_map2.
+    pose ((Vnth_sub_aux (S (sval (MF_perm_last e))) (Veq_app_aux2 l) ip)).
+    rewrite MF_perm_clear_nth; auto. lia. rewrite mod_ann. rewrite one_right.
+    apply f_equal. apply Veq_nth. intros. rewrite Vnth_remove_last. do 2 rewrite Vnth_map2.
+    do 2 rewrite Vnth_remove_last. apply f_equal. rewrite Vremove_correct_right. lia.
+    apply Veq_nth3. trivial. apply Vnth_eq. lia. 
+    (* clean up *)
+    apply permTranInd_sub; trivial.
+  Qed.
+
+  Lemma PexpMatrix_Pexp : forall (N : nat)(c : VG N)(e : MF N)(a : VF N),
+    MFisPermutation e ->
+    VG_Pexp (PexpMatrix c e) a = PexpMatrix (VG_Pexp c (MF_CVmult (MF_trans e) a)) e.
+  Proof.
+    intros. apply Veq_nth. intros. rewrite Vnth_map2. assert (MFisPermutation e).
+    trivial. unfold MFisPermutation in H.  apply andb_true_iff in H.  destruct H.
+    apply (bVforall_elim_nth ip) in H.
+    apply bVexists_eq in H. elim H. intros. elim H2.
+    intros. clear H2. apply VF_beq_true in H3. rewrite Vbuild_nth in H3.
+    rewrite (PexpMatrix_nth c e ip x0 H3). rewrite (PexpMatrix_nth 
+    (VG_Pexp c (MF_CVmult (MF_trans e) a)) e ip x0 H3). rewrite Vnth_map2. rewrite Vnth_map. 
+    rewrite FMatrix.mat_build_nth. rewrite FMatrix.get_col_col_mat.
+    pose (MF_perm_mix_eq e ip x0 H0). apply i0 in H3. unfold FMatrix.get_row.
+    rewrite H3. rewrite FMatrix.VA.dot_product_id. trivial.
+  Qed.
+
+  Lemma PexpMatrix_MF_mult : forall (N : nat)(c : VG N)(e0 e1 : MF N) i (ip : i < N),
+    Vnth (PexpMatrix c (MF_mult e0 e1)) ip = VG_prod (Vbuild
+     (fun (j : nat) (jp : j < N) => VG_prod (VG_Pexp c (Vnth e1 jp)) ^ Vnth (Vnth e0 ip) jp)).
+  Proof.
+    intros. rewrite Vnth_map. rewrite MF_getRow_VCmul. rewrite VG_prod_VG_Pexp_MF_VCmult. trivial. 
+  Qed.
+
+  Lemma PexpMatrix_MF_mult_base : forall (N : nat)(s : VG N)(a b : MF N),  
+    PexpMatrix (PexpMatrix s a) b = PexpMatrix s (MF_mult b a).
+  Proof.
+    intros. apply Veq_nth. intros. rewrite PexpMatrix_MF_mult. rewrite Vnth_map. apply f_equal.
+    apply Veq_nth. intros. rewrite Vnth_map2. rewrite Vbuild_nth. rewrite Vnth_map. trivial.
+  Qed.
+
+  Lemma PexpMatrix_mult  : forall (N : nat)(a b : VG N)(c : MF N),  
+     PexpMatrix (VG_mult a b) c = VG_mult (PexpMatrix a c) (PexpMatrix b c).
+  Proof.
+    intros. unfold PexpMatrix. apply Veq_nth. intros. rewrite Vnth_map2.
+    do 3 rewrite Vnth_map. rewrite VG_Pexp_mult. unfold VF_prod. 
+    rewrite VG_Prod_mult_dist. trivial.
+  Qed.
+
+  Lemma VG_Pexp_build : forall n (gen : forall i, i < n -> G) (a : VF n),
+    Vbuild (fun (j : nat) (jp : j < n) => gen j jp ^ Vnth a jp) = VG_Pexp (Vbuild (fun (j : nat) 
+      (jp : j <n) => gen j jp)) a.
+  Proof.
+    intros. apply Veq_nth. intros. rewrite Vnth_map2. do 2 rewrite Vbuild_nth.  trivial.
+  Qed.
+
+  Lemma VG_mult_build : forall n (gen1 gen2 : forall i, i < n -> G),
+    Vbuild (fun (j : nat) (jp : j < n) => gen1 j jp o gen2 j jp) = VG_mult (Vbuild (fun (j : nat) 
+      (jp : j <n) => gen1 j jp)) (Vbuild (fun (j : nat) (jp : j <n) => gen2 j jp)).
+  Proof.
+    intros. apply Veq_nth. intros. rewrite Vnth_map2. do 3 rewrite Vbuild_nth.  trivial.
+  Qed.
+
+  Lemma VG_Pexp_inProd : forall n h (m x : VF n),
+    VG_Pexp (Vmap (op h) m) x = Vmap (op h) (VF_mult m x).
+  Proof.
+    intros. apply Veq_nth. intros. rewrite Vnth_map2. do 2 rewrite Vnth_map.
+    rewrite VF_comm_mult. rewrite Vnth_map2. rewrite mod_dist_Fmul. trivial.
+  Qed.
+
+  Lemma VG_prod_pexp_VecToMat : forall n m (t : VG (n*m))(y : VF (n*m)),
+    VG_prod (Vmap2 (fun x y => VG_prod (VG_Pexp x y))
+        (VecToMat n m t)(VecToMat n m y)) = VG_prod (VG_Pexp t y).
+  Proof.
+    pose Group.module_abegrp. intros. induction m. 
+    + cbn. assert (Nat.mul n 0%nat = 0%nat). lia. 
+    unfold VG_prod. rewrite Vfold_left_nil_gen. lia. trivial.
+    + rewrite VG_prod_induction. rewrite <- Vtail_map2. 
+    do 2 rewrite VecToMatTail. rewrite IHm. unfold VG_prod.
+    rewrite <- Vfold_left_Vcons. rewrite Vhead_map2. rewrite Vfold_left_Vcons.
+    rewrite comm. pose Vapp_VG_prod. unfold VG_prod in *. rewrite <- e.
+    assert (Nat.mul n (S m) = Nat.add n (Nat.mul n m)). clear IHm. clear e. 
+    clear t. clear y. induction n. lia. lia. rewrite (Vfold_left_cast_irr H). 
+    apply Vfold_left_eq. apply Veq_nth. intros. rewrite Vnth_app. destruct (le_gt_dec n i).
+    ++ rewrite Vnth_cast. do 2 rewrite Vnth_map2. do 2 rewrite Vnth_sub.
+    apply f_equal2; apply Vnth_eq; lia.
+    ++ do 2 rewrite Vbuild_head. rewrite Vnth_cast. do 2 rewrite Vnth_map2.
+    do 2 rewrite Vnth_sub. apply f_equal2; apply Vnth_eq; lia.
+  Qed.
+
+  
+ 
 
 End MatricesG.

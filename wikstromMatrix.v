@@ -119,7 +119,7 @@ Module WikstromMixnet (G G1 G2 : GroupSig)(Ring : RingSig)(Field : FieldSig)
   Definition relComEPC (h :G)(hs : VG (1+N))(c : G) (*Stament*)
                 (m1 m2 : VF (1+N))(r1 r2 : F) :=  (*Witness *)
     m1 <> m2 /\
-    c = (EPC (1+N) h hs m1 r1) /\ c = (EPC (1+N) h hs m2 r2). 
+    c = (EPC h hs m1 r1) /\ c = (EPC h hs m2 r2). 
 
   Lemma PCbreaksEPC : (* We can use this to 
     simply the statment if anyone cares *)

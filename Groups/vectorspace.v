@@ -23,6 +23,7 @@ Module Type FieldSig <: RingSig.
   Axiom module_ring : ring_theory Fzero Fone Fadd Fmul Fsub Finv (@eq F).
 
   Axiom F_bool_eq_corr: forall a b : F, Fbool_eq a b = true <-> a=b.
+   Axiom F_bool_eq_sym : forall a b: F, Fbool_eq a b= Fbool_eq b a.
   Axiom  F_bool_neq_corr: forall a b : F, Fbool_eq a b = false <-> a <> b.
 
   Infix "+" := Fadd.
@@ -63,9 +64,49 @@ End VectorSpaceSig.
 
 (* We now prove some general results about vector spaces *)
 
+
+
+Module FieldAddationalLemmas (Field : FieldSig).
+
+  Import Field.
+    Module AL := RingAddationalLemmas Field.
+
+  Lemma F_mul_zero : forall (a b : F),
+    a * b = 0 -> a = 0 \/ b = 0.
+  Proof.
+    destruct vs_field. destruct F_R. intros. case_eq (Fbool_eq a 0). intros. 
+    apply F_bool_eq_corr in H0. left. trivial. right. apply F_bool_neq_corr in H0. 
+    apply (AL.Fmul_left_cancel (FmulInv a)) in H. rewrite Rmul_assoc in H.
+    rewrite Finv_l in H; auto. ring_simplify in H. trivial.
+  Qed. 
+
+  Lemma F_mul_nzero : forall (a b : F),
+    a * b <> 0 <-> a <> 0 /\ b <> 0.
+  Proof.
+    destruct vs_field. destruct F_R. split; intros. 
+    + split. unfold not. intros. apply H. rewrite H0. field.
+    unfold not. intros. apply H. rewrite H0. field.
+    + unfold not. intros. destruct H. apply F_mul_zero in H0. destruct H0.
+    contradiction. contradiction.
+  Qed. 
+  
+End FieldAddationalLemmas.
+
 Module VectorSpaceAddationalLemmas (Group : GroupSig)(Field : FieldSig)
-                                      (VS: VectorSpaceSig Group Field).
+  (VS: VectorSpaceSig Group Field).
+
+
   Import VS.
+  Module AL := RingAddationalLemmas Field.
+
+  Lemma F_mul_zero : forall (a b : F),
+    a * b = 0 -> a = 0 \/ b = 0.
+  Proof.
+    destruct vs_field. destruct F_R. intros. case_eq (Fbool_eq a 0). intros. 
+    apply F_bool_eq_corr in H0. left. trivial. right. apply F_bool_neq_corr in H0. 
+    apply (AL.Fmul_left_cancel (FmulInv a)) in H. rewrite Rmul_assoc in H.
+    rewrite Finv_l in H; auto. ring_simplify in H. trivial.
+  Qed. 
 
   Lemma F_mul_split : forall (x y z w : F),
     x = y -> z = w -> x * z = y * w.
@@ -179,6 +220,16 @@ Module VectorSpaceAddationalLemmas (Group : GroupSig)(Field : FieldSig)
     (@eq F)). constructor; auto. intros. field; auto. symmetry. apply H.
     apply mod_ann.
   Qed.
+
+  Lemma neg_eq2 :
+    forall (a : F)(b : G), ((-b)^a) = (b^(Finv a)).
+  Proof. 
+    intros.  pose module_abegrp. 
+    pose (right_cancel (H:= module_abegrp)(b ^ a)((- b) ^ a)(b ^ (Finv a))).
+    apply i. rewrite <- mod_dist_Fadd. rewrite <- mod_dist_Gdot.
+    rewrite <- inv_left. replace (Finv a + a) with 0. rewrite mod_ann.
+    rewrite mod_mone. trivial. ring; auto.
+  Qed.
   
   Lemma ExtractorHelper :
     forall(a b :G)(e1 e2 : F),
@@ -195,6 +246,7 @@ Module VectorSpaceAddationalLemmas (Group : GroupSig)(Field : FieldSig)
     field; auto. rewrite dot_assoc. rewrite <- inv_right.
     rewrite one_left. trivial. apply inv_dist. apply comm.
   Qed.
+
 
   Lemma ExtractorHelper2 :
     forall(a b :G)(e1 e2 : F),
@@ -253,6 +305,20 @@ Module VectorSpaceAddationalLemmas (Group : GroupSig)(Field : FieldSig)
     op (Gdot x y) r = Gdot (op x r) (op y r').
   Proof.
     intros. subst. apply mod_dist_Gdot.
+  Qed.
+
+  Lemma FmulInv_dist : forall a b,
+     a <> 0 ->
+     b <> 0 ->
+     FmulInv (a * b) = FmulInv a * FmulInv b.
+  Proof. 
+    intros. field; auto.  
+  Qed. 
+
+  Lemma FsubZero : forall a,
+    a - 0 = a.
+  Proof.
+    intros. field; auto.
   Qed.
 
 End VectorSpaceAddationalLemmas.

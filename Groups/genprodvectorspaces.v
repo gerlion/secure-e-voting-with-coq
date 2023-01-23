@@ -10,11 +10,14 @@ Module Type ProdGroupSig (M1M M2M : GroupSig) <: GroupSig.
   Definition G := prod M1M.G M2M.G.
   Definition Gdot (a b : G) := (M1M.Gdot a.1 b.1, M2M.Gdot a.2 b.2).
   Definition Gone := (M1M.Gone, M2M.Gone).
+  Definition Ggen := (M1M.Ggen, M2M.Ggen).
   Definition Gbool_eq (a b : G) := M1M.Gbool_eq a.1 b.1 &&
                                     M2M.Gbool_eq a.2 b.2. 
+  Definition Gdisjoint (a b : G) := M1M.Gdisjoint a.1 b.1 &&
+                                    M2M.Gdisjoint a.2 b.2. 
   Definition Ginv (a : G) := (M1M.Ginv a.1, M2M.Ginv a.2).
 
-  Lemma module_abegrp : AbeGroup G Gdot Gone Gbool_eq Ginv.
+  Lemma module_abegrp : AbeGroup G Gdot Gone Gbool_eq Gdisjoint Ginv.
   Proof.
     (** We need to prove the correctnes of the extended group*)
     pose M1M.module_abegrp. pose M2M.module_abegrp. constructor. 
@@ -32,6 +35,9 @@ Module Type ProdGroupSig (M1M M2M : GroupSig) <: GroupSig.
     destruct a1. simpl in *. rewrite H1. rewrite H2. trivial.
     intro. apply andb_true_iff. split. apply bool_eq_corr.
     rewrite H. trivial. apply bool_eq_corr. rewrite H. 
+    trivial.
+    (*bool_eq_sym*)
+    intros. unfold Gbool_eq. rewrite bool_eq_sym. rewrite (bool_eq_sym a1.2).
     trivial.
     (*bool_neq_corr*)
     intros.  refine (conj _ _).  intros. 
@@ -55,6 +61,14 @@ Module Type ProdGroupSig (M1M M2M : GroupSig) <: GroupSig.
     apply H. trivial. contradiction.
     intro. trivial.
 
+    (* Disjoint sim *)
+    intros. unfold Gdisjoint. rewrite disjoint_sym. rewrite (disjoint_sym a1.2).
+    trivial.
+    (* Disjoint corr *)
+    intros. unfold Gdisjoint in H. apply andb_true_iff in H.
+    destruct H. apply disjoint_corr in H. unfold not in *. intros. 
+    apply H. rewrite H1. trivial.
+
     (* inv_left *)
     intros. unfold Gdot. simpl. rewrite <- inv_left. rewrite <- inv_left.
     trivial. intros. unfold Gdot. simpl.  rewrite <- inv_right.
@@ -68,6 +82,84 @@ Module Type ProdGroupSig (M1M M2M : GroupSig) <: GroupSig.
   Infix "o" := Gdot (at level 50) .
   Notation "- x" := (Ginv x).
 End ProdGroupSig.
+
+
+Module ProdGroupSigIns (M1M M2M : GroupSig) <: GroupSig.
+  Definition G := prod M1M.G M2M.G.
+  Definition Gdot (a b : G) := (M1M.Gdot a.1 b.1, M2M.Gdot a.2 b.2).
+  Definition Gone := (M1M.Gone, M2M.Gone).
+  Definition Ggen := (M1M.Ggen, M2M.Ggen).
+  Definition Gbool_eq (a b : G) := M1M.Gbool_eq a.1 b.1 &&
+                                    M2M.Gbool_eq a.2 b.2. 
+  Definition Gdisjoint (a b : G) := M1M.Gdisjoint a.1 b.1 &&
+                                    M2M.Gdisjoint a.2 b.2. 
+  Definition Ginv (a : G) := (M1M.Ginv a.1, M2M.Ginv a.2).
+
+  Lemma module_abegrp : AbeGroup G Gdot Gone Gbool_eq Gdisjoint Ginv.
+  Proof.
+    (** We need to prove the correctnes of the extended group*)
+    pose M1M.module_abegrp. pose M2M.module_abegrp. constructor. 
+    constructor. constructor. intros.
+    unfold Gdot. rewrite dot_assoc. rewrite dot_assoc. trivial.
+    intros. unfold Gdot. rewrite one_left. rewrite one_left.
+    rewrite <- surjective_pairing. trivial.
+    intros. unfold Gdot. rewrite one_right. rewrite one_right.
+    rewrite <- surjective_pairing. trivial.
+    (*bool_eq_corr*)
+    intros. refine (conj _ _). destruct a. destruct b. 
+    simpl in *. intros. apply andb_true_iff in H. destruct H. 
+    assert (a1.1 = g). apply bool_eq_corr. apply H.
+    assert (a1.2 = g0). apply bool_eq_corr. apply H0.
+    destruct a1. simpl in *. rewrite H1. rewrite H2. trivial.
+    intro. apply andb_true_iff. split. apply bool_eq_corr.
+    rewrite H. trivial. apply bool_eq_corr. rewrite H. 
+    trivial.
+    (*bool_eq_sym*)
+    intros. unfold Gbool_eq. rewrite bool_eq_sym. rewrite (bool_eq_sym a1.2).
+    trivial.
+    (*bool_neq_corr*)
+    intros.  refine (conj _ _).  intros. 
+    apply andb_false_iff in H.
+    case_eq (M1M.Gbool_eq a1.1 b.1). 
+    intros. rewrite H0 in H. destruct H. auto.
+    apply bool_neq_corr in H. unfold not. intro.
+    rewrite H1 in H. apply H. trivial.
+    intros.
+    apply bool_neq_corr in H0. unfold not. intros.
+    rewrite H1 in H0. apply H0. trivial.
+    (*Fist part bool_neq_corr complete *)
+    intro. unfold not in H. unfold negb. 
+    case_eq (M1M.Gbool_eq a1.1 b.1 && M2M.Gbool_eq a1.2 b.2). 
+    intro. apply andb_true_iff in H0.
+    destruct H0. assert (a1.2 = b.2).
+    apply bool_eq_corr. apply H1. 
+    assert (a1.1 = b.1). apply bool_eq_corr. apply H0.
+    destruct a0. destruct b. simpl in *. destruct a1.
+    simpl in *. rewrite H3 in H. rewrite H2 in H. assert False. 
+    apply H. trivial. contradiction.
+    intro. trivial.
+
+    (* Disjoint sim *)
+    intros. unfold Gdisjoint. rewrite disjoint_sym. rewrite (disjoint_sym a1.2).
+    trivial.
+    (* Disjoint corr *)
+    intros. unfold Gdisjoint in H. apply andb_true_iff in H.
+    destruct H. apply disjoint_corr in H. unfold not in *. intros. 
+    apply H. rewrite H1. trivial.
+
+    (* inv_left *)
+    intros. unfold Gdot. simpl. rewrite <- inv_left. rewrite <- inv_left.
+    trivial. intros. unfold Gdot. simpl.  rewrite <- inv_right.
+    rewrite <- inv_right. trivial.
+
+    (* comm *)
+    intros. unfold Gdot. simpl. rewrite comm. remember (M1M.Gdot b.1 a1.1) as one.
+    rewrite comm. trivial.
+  Qed.
+
+  Infix "o" := Gdot (at level 50) .
+  Notation "- x" := (Ginv x).
+End ProdGroupSigIns.
 
 Module Type ProdRingSig (M1Ring M2Ring : RingSig) <: RingSig.
 
@@ -109,6 +201,11 @@ Module Type ProdRingSig (M1Ring M2Ring : RingSig) <: RingSig.
     rewrite H1. rewrite H. auto. 
   Qed.
 
+  Lemma F_bool_eq_sym : forall a b : F, Fbool_eq a b = Fbool_eq b a.
+  Proof.
+    intros. unfold Fbool_eq. rewrite M1Ring.F_bool_eq_sym.
+    rewrite M2Ring.F_bool_eq_sym. trivial.
+  Qed.
 
   Lemma  F_bool_neq_corr: forall a b : F, Fbool_eq a b = false <-> a <> b.
   Proof.
@@ -207,6 +304,12 @@ Module Type ProdVectorSpaceModuleSameGroup (M1C M2C : GroupSig)
   Proof.
     intros. unfold op3. rewrite MVS1.RopFZero. rewrite MVS2.RopFZero. trivial.
   Qed.
+  
+  Lemma RopFOne : forall x, op3 x Fone = x.
+    Proof. 
+      intros. unfold op3. rewrite MVS1.RopFOne. rewrite MVS2.RopFOne. 
+      rewrite <- surjective_pairing. trivial.
+    Qed.
 
   Lemma RopRZero : forall x, op3 Ring.Fzero x = Ring.Fzero.
   Proof.

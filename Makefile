@@ -41,6 +41,12 @@ helios.vo : cryptoprim.vo sigmaprotocol.vo basicSigmas.vo HeliosIACR2018.vo heli
 ExtractionHelios.vo : helios.vo ExtractionHelios.v
 ExtractionMixnet.vo : mixnetTest.vo ExtractionMixnet.v
 
+BayerGroth : cryptoprim.vo
+	make -C BayerGroth
+	
+Extraction : cryptoprim.vo HeliosIACR2018.vo
+	make -C BayerGroth extract.vo
+
 #run clean
 clean :
-	rm -rf *.vo *.vos *.vok *.glob .*.aux .*.cache && cd Groups && make clean && cd .. && cd ElectionGuard && make clean
+	rm -rf *.vo *.vos *.vok *.glob .*.aux .*.cache && cd Groups && make clean && cd .. && cd ElectionGuard && make clean && cd .. && cd BayerGroth && make clean 

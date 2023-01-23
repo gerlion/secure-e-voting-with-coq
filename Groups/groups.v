@@ -8,7 +8,8 @@ Require Import ssreflect ssrfun ssrbool.
 
 (** We start by defining a Monoid *)
 
-Class Monoid (A:Set)(dot : A -> A -> A)(one : A)(bool_eq : A-> A-> bool) := {
+Class Monoid (A:Set)(dot : A -> A -> A)(one : A)(bool_eq : A-> A-> bool)
+    (disjoint : A-> A-> bool) := {
 
     dot_assoc : forall x y z : A, dot x (dot y z) = dot (dot x y) z;
     one_left : forall x : A, dot one x = x;
@@ -18,29 +19,34 @@ Class Monoid (A:Set)(dot : A -> A -> A)(one : A)(bool_eq : A-> A-> bool) := {
         pretty sure ssreflect provides a better way to do this *)
 
     bool_eq_corr: forall a b : A, bool_eq a b = true <-> a=b;
+    bool_eq_sym : forall a b : A, bool_eq a b = bool_eq b a;
     bool_neq_corr: forall a b : A, bool_eq a b = false <-> a <> b;
+
+    disjoint_sym : forall a b, disjoint a b = disjoint b a;
+    disjoint_corr  : forall a b : A, disjoint a b = true -> a <> b;
 }.
 
 (** We now extend Monoids to various types of groups *)
-
-Class Group (A:Set)(dot : A -> A -> A) (one : A) (bool_eq : A-> A-> bool) (inv : A -> A) := {
-  grp_mon :> Monoid A dot one bool_eq;
+Class Group (A:Set)(dot : A -> A -> A) (one : A) (bool_eq : A-> A-> bool) 
+    (disjoint : A-> A-> bool)(inv : A -> A) := {
+  grp_mon :> Monoid A dot one bool_eq disjoint;
   inv_left: forall x : A, one =  dot (inv x) x;
   inv_right: forall x : A, one =  dot x (inv x);
 }.
 
-Class AbeGroup (A:Set)(dot : A -> A -> A) (one : A) (bool_eq : A-> A-> bool) (inv : A -> A) := {
-  abegrp_grp :> Group A dot one bool_eq inv;
+Class AbeGroup (A:Set)(dot : A -> A -> A) (one : A) (bool_eq : A-> A-> bool) 
+    (disjoint : A-> A-> bool)(inv : A -> A) := {
+  abegrp_grp :> Group A dot one bool_eq disjoint inv;
   comm : forall a b : A, dot a b = dot b a;
 }.
 
 Section AdditionalGroupProperties. 
 
-Generalizable Variables A dot Aone Ainv bool_equal.
-Context `{AbeGroup A dot Aone bool_equal Ainv}.
+Generalizable Variables A dot Aone Ainv bool_equal disjoint.
+Context `{AbeGroup A dot Aone bool_equal disjoint Ainv}.
 
-Definition abegop `{AbeGroup A dot Aone bool_equal Ainv} := dot.
-Definition abegone `{AbeGroup A dot Aone bool_equal Ainv} := Aone.
+Definition abegop `{AbeGroup A dot Aone bool_equal disjoint Ainv} := dot.
+Definition abegone `{AbeGroup A dot Aone bool_equal disjoint Ainv} := Aone.
 
 Infix "*" := abegop.
 Notation "1" := Aone.
@@ -165,6 +171,14 @@ Proof.
   simpl. rewrite <- dob_neg. trivial.
 Qed.
 
+Lemma inv_dist3 : forall a b : A,
+  a * - b = - (- a * b).
+Proof.
+  intros. remember (-b) as c.
+  rewrite <- inv_dist. rewrite Heqc.
+  simpl. rewrite <- dob_neg. trivial.
+Qed.
+
 Lemma b_equal : forall a b c : A,
   (a = b * c) <-> (a * - c = b).
 Proof.
@@ -262,16 +276,19 @@ Lemma field_additive_abegrp (F:Set)(Fadd : F -> F -> F) (Fzero : F)
   (Fmul : F -> F -> F) (Fone : F)(FmulInv : F -> F)(Fdiv : F-> F-> F) :
   field_theory Fzero Fone Fadd Fmul Fsub Finv Fdiv FmulInv (@eq F) ->
   (forall a b : F, Fbool_eq a b = true <-> a=b) ->
+  (forall a b : F, Fbool_eq a b = Fbool_eq b a) ->
   (forall a b : F, Fbool_eq a b = false <-> a <> b) ->
-  AbeGroup F Fadd Fzero Fbool_eq Finv.
+  AbeGroup F Fadd Fzero Fbool_eq (fun a b => negb (Fbool_eq a b)) Finv.
 Proof.
   intros. constructor. constructor. constructor. 
   intros; rewrite (Radd_assoc (rO := Fzero)); trivial; apply H0.
   intros; rewrite (Radd_0_l); trivial; apply H0.
-  intros. rewrite (Radd_comm). rewrite (Radd_0_l). trivial. apply H0. apply H0.
-  apply H1. apply H2. intros. rewrite (Radd_comm). rewrite (Ropp_def). trivial.
-  apply H0. apply H0.
-  intros. rewrite (Ropp_def). trivial. apply H0. intros. rewrite (Radd_comm). trivial. apply H0.
+  intros. rewrite (Radd_comm). apply H0. rewrite (Radd_0_l). trivial. apply H0. trivial.
+  apply H1. apply H2. apply H3. intros. rewrite H2. trivial. intros.
+  apply negb_true_iff in H4. apply H3 in H4. trivial.
+  intros. rewrite (Radd_comm). apply H0. rewrite (Ropp_def). apply H0.
+  trivial. 
+  intros. rewrite (Ropp_def). apply H0. trivial. intros. rewrite (Radd_comm). apply H0. trivial.
 Qed. 
 
 End AdditionalGroupProperties.
@@ -282,10 +299,12 @@ Module Type GroupSig.
   Parameter G : Set.
   Parameter Gdot : G -> G -> G.
   Parameter Gone : G.
+  Parameter Ggen : G. (* This should be a generator of the group but this is not checked *)
   Parameter Gbool_eq : G-> G-> bool.
+  Parameter Gdisjoint : G-> G-> bool.
   Parameter Ginv : G -> G.
 
-  Axiom module_abegrp : AbeGroup G Gdot Gone Gbool_eq Ginv.
+  Axiom module_abegrp : AbeGroup G Gdot Gone Gbool_eq Gdisjoint Ginv.
 
   Infix "o" := Gdot (at level 50) .
   Notation "- x" := (Ginv x).

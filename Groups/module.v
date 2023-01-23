@@ -15,10 +15,10 @@ Module Type RingSig.
   Parameter Finv : F -> F.
   Parameter Fmul : F -> F -> F.
   Parameter Fone : F.
-
   Axiom module_ring : ring_theory Fzero Fone Fadd Fmul Fsub Finv (@eq F).
 
   Axiom F_bool_eq_corr: forall a b : F, Fbool_eq a b = true <-> a=b.
+  Axiom F_bool_eq_sym : forall a b: F, Fbool_eq a b= Fbool_eq b a.
   Axiom  F_bool_neq_corr: forall a b : F, Fbool_eq a b = false <-> a <> b.
 
   Infix "+" := Fadd.
@@ -56,6 +56,12 @@ Module RingAddationalLemmas (Ring : RingSig).
     rewrite H. trivial.
   Qed.
 
+  Lemma Fmul_left_cancel : forall (x y z : F),
+    y = z -> x * y = x * z.
+  Proof.
+    intros. rewrite H. trivial.
+  Qed.
+
    Lemma F_right_cancel : forall (x y z : F),
     y + x = z + x <-> y = z.
   Proof.
@@ -70,6 +76,12 @@ Module RingAddationalLemmas (Ring : RingSig).
   (* This lemma is only for when things go bad *)
   Lemma move_neg : forall (a b : F),
     Finv (a * b) = a * (Finv b).
+  Proof.
+    intros. ring; auto. 
+  Qed.
+
+  Lemma move_neg2 : forall (a b : F),
+    Finv (a * b) = (Finv a) * b.
   Proof.
     intros. ring; auto. 
   Qed.
@@ -101,6 +113,12 @@ Module RingAddationalLemmas (Ring : RingSig).
     intros. ring; auto.
   Qed.
 
+  Lemma Finv_inv : forall (x : F),
+    Finv (Finv x) = x.
+  Proof.
+      intros. ring.
+  Qed.
+
   Lemma whenAutoFails1 :
     forall (a b : F),
       a = a + b - b.
@@ -128,6 +146,86 @@ Module RingAddationalLemmas (Ring : RingSig).
   Proof.
     intros. ring; auto.
   Qed.
+
+  Lemma bi_exp : forall (a b c d : F),
+    (a + b) * (c + d) = a*c+a*d+b*c+b*d.
+  Proof.
+    intros. ring; auto.
+  Qed.
+  
+  (* The following is a suite of cancel lemmas for terms of length 4 *)
+  Lemma cancel_1_1 : forall (a b c d e f g h : F),
+    a=e ->
+    b+c+d = f+g+h -> a+b+c+d=e+f+g+h.
+  Proof.
+    destruct module_ring.
+    intros. rewrite H. do 4 rewrite <- Radd_assoc. apply f_equal.
+    do 2 rewrite Radd_assoc. trivial.
+  Qed. 
+
+  Lemma cancel_1_2 : forall (a b c d e f g h : F),
+    a=f ->
+    b+c+d = e+g+h -> a+b+c+d=e+f+g+h.
+  Proof.
+    destruct module_ring.
+    intros. rewrite H. do 2 rewrite <- Radd_assoc. rewrite <- Radd_assoc in H0.
+    rewrite H0. ring; auto.
+  Qed. 
+
+  Lemma cancel_1_3 : forall (a b c d e f g h : F),
+    a=g ->
+    b+c+d = e+f+h -> a+b+c+d=e+f+g+h.
+  Proof.
+    destruct module_ring.
+    intros. rewrite H. do 2 rewrite <- Radd_assoc. rewrite <- Radd_assoc in H0.
+    rewrite H0. ring; auto.
+  Qed. 
+
+  (* 
+  Lemma cancel_1_4 :
+  
+  Lemma cancel_2_1 :
+  
+  Lemma cancel_2_2 : *)
+
+  Lemma cancel_2_3 : forall (a b c d e f g h : F),
+    b=g ->
+    a+c+d = e+f+h -> a+b+c+d=e+f+g+h.
+  Proof.
+    destruct module_ring.
+    intros. rewrite H. replace (a + g + c + d) with (a + c + d + g).
+    rewrite H0. ring. ring.
+  Qed. 
+
+  (* 
+  Lemma cancel_2_4 :
+
+  Lemma cancel_3_1 :
+
+  Lemma cancel_3_2 : *)
+
+  Lemma cancel_3_3 : forall (a b c d e f g h : F),
+    c=g ->
+    a+b+d = e+f+h -> a+b+c+d=e+f+g+h.
+  Proof.
+    destruct module_ring.
+    intros. rewrite H. replace (a + b + g + d) with (a + b + d + g).
+    rewrite H0. ring. ring.
+  Qed. 
+
+  (*
+
+  Lemma cancel_3_4 :
+
+  Lemma cancel_4_1 :
+
+  Lemma cancel_4_2 :
+
+  Lemma cancel_4_3 :
+
+  Lemma cancel_4_4 :
+  *)
+
 End RingAddationalLemmas.
 
 (** We first define a module *)
@@ -252,7 +350,7 @@ Module ModuleAddationalLemmas (Group : GroupSig)(Ring : RingSig)
     apply mod_ann.
   Qed.
 
-  Lemma inv_dis : forall (x y : F),
+  Lemma mak : forall (x y : F),
     Finv (x + y) = (Finv x) + (Finv y).
   Proof.
     intros. ring; auto.

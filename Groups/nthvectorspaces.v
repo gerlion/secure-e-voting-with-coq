@@ -11,6 +11,7 @@ Require Import matricesF.
 Require Import module.
 Require Import CoLoR.Util.Vector.VecUtil.
 Require Import modulevectorspace.
+Require Import VectorUtil.
 
 (* Dirty hack to paramtise the next module *)
 Module Type Nat.
@@ -21,13 +22,15 @@ Module Type GroupNthSig (Group : GroupSig)(Hack : Nat) <: GroupSig.
   Import Group.
   Import Hack.
 
-  Definition G := vector G N.
+  Definition G := vector G (S N).
   Definition Gdot (a b : G) : G := Vmap2 Gdot a b.
-  Definition Gone := Vconst Gone N.
+  Definition Gone := Vconst Gone (S N).
+  Definition Ggen := Vconst Ggen (S N).
   Definition Gbool_eq (a b : G) := bVforall2 Gbool_eq a b.
+  Definition Gdisjoint (a b : G) := bVforall2 Gdisjoint a b.
   Definition Ginv (a : G) := Vmap Ginv a.
 
-  Lemma module_abegrp : AbeGroup G Gdot Gone Gbool_eq Ginv.
+  Lemma module_abegrp : AbeGroup G Gdot Gone Gbool_eq Gdisjoint Ginv.
   Proof.
     (** We need to prove the correctnes of the extended group*)
     pose module_abegrp. destruct a. destruct abegrp_grp. destruct grp_mon.
@@ -39,7 +42,7 @@ Module Type GroupNthSig (Group : GroupSig)(Hack : Nat) <: GroupSig.
     apply (Vforall2_elim_nth ip) in H0. apply H0.
     (* part 2 *)
     intros. rewrite H. unfold Gbool_eq. rewrite (bVforall2_ok (@eq Group.G)).
-    apply Vforall2_intro_nth. intros. trivial. intros. apply bool_eq_corr.
+    intros. apply bool_eq_corr. apply Vforall2_intro_nth. intros. trivial.
     (* Starting *)
     constructor. constructor. constructor. intros. unfold Gdot. symmetry. 
     apply Veq_nth. intros. do 4 rewrite Vnth_map2. rewrite dot_assoc. trivial.
@@ -48,11 +51,31 @@ Module Type GroupNthSig (Group : GroupSig)(Hack : Nat) <: GroupSig.
     intro. unfold Gdot. apply Veq_nth. intros. rewrite Vnth_map2.
     rewrite Vnth_const. apply one_right.
     apply H.
+    (* bool_eq_sym*)
+    intros. unfold Gbool_eq. unfold G in *. clear H. induction N.
+    rewrite (VSn_eq a). rewrite (VSn_eq b).  
+    rewrite (Vector_0_is_nil (Vtail a)). rewrite (Vector_0_is_nil (Vtail b)). cbn.
+    rewrite bool_eq_sym. trivial. rewrite (VSn_eq a). rewrite (VSn_eq b). cbn.
+    unfold bVforall2 in IHn. rewrite (IHn (Vtail a) (Vtail b)).
+    rewrite bool_eq_sym. trivial.
     (*bool_neq_corr*)
     intros. refine (conj _ _). intros. apply not_true_iff_false in H0.
     unfold not in *. intros. apply H0. apply H. apply H1.
     intros. apply not_true_iff_false. unfold not in *.
     intros. apply H0. apply H. apply H1.
+
+    (* Sym *)
+    intros. unfold G, Gdisjoint in *. clear H. induction N. 
+    rewrite (VSn_eq a). rewrite (VSn_eq b).
+    rewrite (Vector_0_is_nil (Vtail a)). rewrite (Vector_0_is_nil (Vtail b)). 
+    cbn. rewrite disjoint_sym. trivial.
+    rewrite (VSn_eq a). rewrite (VSn_eq b). cbn.    
+    unfold bVforall2 in IHn. rewrite (IHn (Vtail a) (Vtail b)).
+    rewrite disjoint_sym. trivial.
+    (* Corr *)
+    intros. unfold Gdisjoint, G in *. 
+    apply bVforall2_elim_head in H0. apply disjoint_corr in H0.
+    unfold not in *. intros. apply H0. rewrite H1. trivial.
 
     (* inv_left *)
     intros. apply Veq_nth. intros. unfold Gdot. rewrite Vnth_const.
@@ -70,13 +93,15 @@ Module GroupNthIns (Group : GroupSig)(Hack : Nat) <: GroupSig.
   Import Group.
   Import Hack.
 
-  Definition G := vector G N.
+  Definition G := vector G (S N).
   Definition Gdot (a b : G) : G := Vmap2 Gdot a b.
-  Definition Gone := Vconst Gone N.
+  Definition Gone := Vconst Gone (S N).
+  Definition Ggen := Vconst Ggen (S N).
   Definition Gbool_eq (a b : G) := bVforall2 Gbool_eq a b.
+  Definition Gdisjoint (a b : G) := bVforall2 Gdisjoint a b.
   Definition Ginv (a : G) := Vmap Ginv a.
 
-  Lemma module_abegrp : AbeGroup G Gdot Gone Gbool_eq Ginv.
+  Lemma module_abegrp : AbeGroup G Gdot Gone Gbool_eq Gdisjoint Ginv.
   Proof.
     (** We need to prove the correctnes of the extended group*)
     pose module_abegrp. destruct a. destruct abegrp_grp. destruct grp_mon.
@@ -88,7 +113,7 @@ Module GroupNthIns (Group : GroupSig)(Hack : Nat) <: GroupSig.
     apply (Vforall2_elim_nth ip) in H0. apply H0.
     (* part 2 *)
     intros. rewrite H. unfold Gbool_eq. rewrite (bVforall2_ok (@eq Group.G)).
-    apply Vforall2_intro_nth. intros. trivial. intros. apply bool_eq_corr.
+    intros. apply bool_eq_corr. apply Vforall2_intro_nth. intros. trivial. 
     (* Starting *)
     constructor. constructor. constructor. intros. unfold Gdot. symmetry. 
     apply Veq_nth. intros. do 4 rewrite Vnth_map2. rewrite dot_assoc. trivial.
@@ -97,11 +122,31 @@ Module GroupNthIns (Group : GroupSig)(Hack : Nat) <: GroupSig.
     intro. unfold Gdot. apply Veq_nth. intros. rewrite Vnth_map2.
     rewrite Vnth_const. apply one_right.
     apply H.
+    (* bool_eq_sym*)
+    intros. unfold Gbool_eq. unfold G in *. clear H. induction N.
+    rewrite (VSn_eq a). rewrite (VSn_eq b).  
+    rewrite (Vector_0_is_nil (Vtail a)). rewrite (Vector_0_is_nil (Vtail b)). cbn.
+    rewrite bool_eq_sym. trivial. rewrite (VSn_eq a). rewrite (VSn_eq b). cbn.
+    unfold bVforall2 in IHn. rewrite (IHn (Vtail a) (Vtail b)).
+    rewrite bool_eq_sym. trivial.
     (*bool_neq_corr*)
     intros. refine (conj _ _). intros. apply not_true_iff_false in H0.
     unfold not in *. intros. apply H0. apply H. apply H1.
     intros. apply not_true_iff_false. unfold not in *.
     intros. apply H0. apply H. apply H1.
+
+    (* Sym *)
+    intros. unfold G, Gdisjoint in *. clear H. induction N. 
+    rewrite (VSn_eq a). rewrite (VSn_eq b).
+    rewrite (Vector_0_is_nil (Vtail a)). rewrite (Vector_0_is_nil (Vtail b)). 
+    cbn. rewrite disjoint_sym. trivial.
+    rewrite (VSn_eq a). rewrite (VSn_eq b). cbn.    
+    unfold bVforall2 in IHn. rewrite (IHn (Vtail a) (Vtail b)).
+    rewrite disjoint_sym. trivial.
+    (* Corr *)
+    intros. unfold Gdisjoint, G in *. 
+    apply bVforall2_elim_head in H0. apply disjoint_corr in H0.
+    unfold not in *. intros. apply H0. rewrite H1. trivial.
 
     (* inv_left *)
     intros. apply Veq_nth. intros. unfold Gdot. rewrite Vnth_const.
@@ -120,14 +165,14 @@ Module Type NthRingSig (Hack : Nat)(Ring : RingSig) <: RingSig.
   Import Hack.
   Import Ring.
 
-  Definition F := vector F N.
+  Definition F := vector F (S N).
   Definition Fadd (a b : F) := Vmap2 Fadd a b.
-  Definition Fzero := Vconst Fzero N.
+  Definition Fzero := Vconst Fzero (S N).
   Definition Fbool_eq (a b : F) := bVforall2 Fbool_eq a b.
   Definition Fsub (a b : F) := Vmap2 Fsub a b.
   Definition Finv (a : F) := Vmap Finv a.
   Definition Fmul (a b : F) := Vmap2 Fmul a b.
-  Definition Fone := Vconst Fone N. 
+  Definition Fone := Vconst Fone (S N). 
 
   Lemma module_ring : ring_theory Fzero Fone Fadd Fmul Fsub Finv (@eq F).
   Proof.
@@ -152,8 +197,18 @@ Module Type NthRingSig (Hack : Nat)(Ring : RingSig) <: RingSig.
     apply (Vforall2_elim_nth ip) in H0. apply H0.
     (* part 2 *)
     intros. rewrite H. unfold Fbool_eq. rewrite (bVforall2_ok (@eq Ring.F)).
-    apply Vforall2_intro_nth. intros. trivial. intros. apply Ring.F_bool_eq_corr.
+    intros. apply Ring.F_bool_eq_corr. apply Vforall2_intro_nth. intros. trivial. 
   Qed.
+  Lemma F_bool_eq_sym : forall a b :F, Fbool_eq a b = Fbool_eq b a.
+  Proof.
+    intros. unfold Fbool_eq. unfold F in *. induction N. 
+    rewrite (VSn_eq a). rewrite (VSn_eq b). 
+    rewrite (Vector_0_is_nil (Vtail a)). rewrite (Vector_0_is_nil (Vtail b)). cbn.
+    rewrite F_bool_eq_sym. trivial. rewrite (VSn_eq a). rewrite (VSn_eq b). cbn.
+    unfold bVforall2 in IHn. rewrite (IHn (Vtail a) (Vtail b)).
+    rewrite F_bool_eq_sym. trivial.
+  Qed.
+ 
   Lemma  F_bool_neq_corr: forall a b : F, Fbool_eq a b = false <-> a <> b.
   Proof.
     intros. refine (conj _ _). intros. apply not_true_iff_false in H.
@@ -170,14 +225,14 @@ Module NthRingIns (Hack : Nat)(Ring : RingSig) <: RingSig.
   Import Hack.
   Import Ring.
 
-  Definition F := vector F N.
+  Definition F := vector F (S N).
   Definition Fadd (a b : F) := Vmap2 Fadd a b.
-  Definition Fzero := Vconst Fzero N.
+  Definition Fzero := Vconst Fzero (S N).
   Definition Fbool_eq (a b : F) := bVforall2 Fbool_eq a b.
   Definition Fsub (a b : F) := Vmap2 Fsub a b.
   Definition Finv (a : F) := Vmap Finv a.
   Definition Fmul (a b : F) := Vmap2 Fmul a b.
-  Definition Fone := Vconst Fone N. 
+  Definition Fone := Vconst Fone (S N). 
 
   Lemma module_ring : ring_theory Fzero Fone Fadd Fmul Fsub Finv (@eq F).
   Proof.
@@ -202,7 +257,16 @@ Module NthRingIns (Hack : Nat)(Ring : RingSig) <: RingSig.
     apply (Vforall2_elim_nth ip) in H0. apply H0.
     (* part 2 *)
     intros. rewrite H. unfold Fbool_eq. rewrite (bVforall2_ok (@eq Ring.F)).
-    apply Vforall2_intro_nth. intros. trivial. intros. apply Ring.F_bool_eq_corr.
+    intros. apply Ring.F_bool_eq_corr. apply Vforall2_intro_nth. intros. trivial.
+  Qed.
+  Lemma F_bool_eq_sym : forall a b :F, Fbool_eq a b = Fbool_eq b a.
+  Proof.
+    intros. unfold Fbool_eq. unfold F in *. induction N. 
+    rewrite (VSn_eq a). rewrite (VSn_eq b). 
+    rewrite (Vector_0_is_nil (Vtail a)). rewrite (Vector_0_is_nil (Vtail b)). cbn.
+    rewrite F_bool_eq_sym. trivial. rewrite (VSn_eq a). rewrite (VSn_eq b). cbn.
+    unfold bVforall2 in IHn. rewrite (IHn (Vtail a) (Vtail b)).
+    rewrite F_bool_eq_sym. trivial.
   Qed.
   Lemma  F_bool_neq_corr: forall a b : F, Fbool_eq a b = false <-> a <> b.
   Proof.
@@ -432,6 +496,11 @@ Module Type VectorSpaceModuleSameGroupNthSig (Hack : Nat)(Group : GroupSig)(Fiel
       intros. unfold op3. apply Veq_nth. intros.
       rewrite Vnth_map. rewrite Vnth_const. field; auto.
     Qed.
+    Lemma RopFOne : forall x, op3 x Fone = x.
+    Proof. 
+      intros. unfold op3. apply Veq_nth. intros.
+      rewrite Vnth_map. field; auto.
+    Qed.
     Lemma RopRZero : forall x, op3 NthRing.Fzero x = NthRing.Fzero.
     Proof.
       intros. unfold op3. apply Veq_nth. intros.
@@ -484,6 +553,11 @@ Module VectorSpaceModuleSameGroupNthIns(Hack : Nat)(Group : GroupSig)(Field : Fi
     Proof.
       intros. unfold op3. apply Veq_nth. intros.
       rewrite Vnth_map. rewrite Vnth_const. field; auto.
+    Qed.    
+    Lemma RopFOne : forall x, op3 x Fone = x.
+    Proof. 
+      intros. unfold op3. apply Veq_nth. intros.
+      rewrite Vnth_map. field; auto.
     Qed.
     Lemma RopRZero : forall x, op3 NthRing.Fzero x = NthRing.Fzero.
     Proof.
@@ -539,6 +613,11 @@ Module Type VectorSpaceModuleSameGroupNthStack(Hack : Nat)(Group : GroupSig)(Fie
       intros. unfold op3. apply Veq_nth. intros.
       rewrite Vnth_map. rewrite Vnth_const. rewrite MVS.RopFZero. trivial.
     Qed.
+    Lemma RopFOne : forall x, op3 x Fone = x.
+    Proof. 
+      intros. unfold op3. apply Veq_nth. intros.
+      rewrite Vnth_map. apply MVS.RopFOne. 
+    Qed.
     Lemma RopRZero : forall x, op3 NthRing.Fzero x = NthRing.Fzero.
     Proof.
       intros. unfold op3. apply Veq_nth. intros.
@@ -591,6 +670,11 @@ Module VectorSpaceModuleSameGroupNthStackIns(Hack : Nat)(Group : GroupSig)(Field
     Proof.
       intros. unfold op3. apply Veq_nth. intros.
       rewrite Vnth_map. rewrite Vnth_const. rewrite MVS.RopFZero. trivial.
+    Qed.
+    Lemma RopFOne : forall x, op3 x Fone = x.
+    Proof. 
+      intros. unfold op3. apply Veq_nth. intros.
+      rewrite Vnth_map. apply MVS.RopFOne.
     Qed.
     Lemma RopRZero : forall x, op3 NthRing.Fzero x = NthRing.Fzero.
     Proof.

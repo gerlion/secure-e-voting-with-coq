@@ -75,9 +75,10 @@ Module BasicSigmas (Group : GroupSig)(Field : FieldSig)(VS : VectorSpaceSig Grou
     :CompSigmaProtocol dLogForm. 
   Proof.
     pose vs_field. pose module_abegrp.
-    assert (AbeGroup F Fadd 0 Fbool_eq Finv).  apply (field_additive_abegrp (F)(Fadd)(Fzero)
+    assert (AbeGroup F Fadd 0 Fbool_eq (fun a b => negb (Fbool_eq a b)) Finv).
+      apply (field_additive_abegrp (F)(Fadd)(Fzero)
     (Fbool_eq) (Fsub)(Finv)(Fmul) (Fone)(FmulInv)(Fdiv)). apply f. 
-    apply F_bool_eq_corr. apply F_bool_neq_corr.
+    apply F_bool_eq_corr. apply F_bool_eq_sym. apply F_bool_neq_corr.
      destruct f. destruct F_R. 
      constructor. constructor. constructor.  unfold dLogForm. cbn in *. apply H.
     + intros. trivial.
@@ -177,9 +178,10 @@ Module BasicSigmas (Group : GroupSig)(Field : FieldSig)(VS : VectorSpaceSig Grou
     :CompSigmaProtocol emptyForm.
   Proof.
     pose vs_field. pose module_abegrp.
-    assert (AbeGroup F Fadd 0 Fbool_eq Finv). apply (field_additive_abegrp (F)(Fadd)(Fzero)
+    assert (AbeGroup F Fadd 0 Fbool_eq (fun a b => negb (Fbool_eq a b)) Finv). 
+    apply (field_additive_abegrp (F)(Fadd)(Fzero)
     (Fbool_eq) (Fsub)(Finv)(Fmul) (Fone)(FmulInv)(Fdiv)). apply f. 
-    apply F_bool_eq_corr. apply F_bool_neq_corr.
+    apply F_bool_eq_corr. apply F_bool_eq_sym. apply F_bool_neq_corr.
     destruct f. destruct F_R.  
      constructor. constructor. constructor.  unfold emptyForm. cbn in *. apply H. trivial.
     (*Begining main lemmas *)
@@ -257,9 +259,10 @@ Module BasicSigmas (Group : GroupSig)(Field : FieldSig)(VS : VectorSpaceSig Grou
     :CompSigmaProtocol dLog2Form. 
   Proof.
     pose vs_field. pose module_abegrp. simpl in *.
-    assert (AbeGroup F Fadd 0 Fbool_eq Finv).  apply (field_additive_abegrp (F)(Fadd)(Fzero)
+    assert (AbeGroup F Fadd 0 Fbool_eq (fun a b => negb (Fbool_eq a b)) Finv).  
+    apply (field_additive_abegrp (F)(Fadd)(Fzero)
     (Fbool_eq) (Fsub)(Finv)(Fmul) (Fone)(FmulInv)(Fdiv)). apply f.
-    apply F_bool_eq_corr. apply F_bool_neq_corr.
+    apply F_bool_eq_corr. apply F_bool_eq_sym. apply F_bool_neq_corr.
     destruct f. destruct F_R.   
      constructor. constructor. constructor. cbn in *. apply H.
     + intros. trivial.
@@ -399,7 +402,7 @@ Module wikSigma (G G1 G2 : GroupSig)(Ring : RingSig)(Field : FieldSig)
     (*Both rBar and rDimond are dealt with elsewhere *)
 
     (* Prod c^u = EPC u' rTil *)
-    Gbool_eq a (EPC (1+N) g hs u' rTil) &&
+    Gbool_eq a (EPC g hs u' rTil) &&
       (* Prod e^u = Prod e'^u' * E(1,r) *) 
     G1.Gbool_eq b (G1.Gdot (MoC.VG_prod (MoC.VG_Pexp e' u')) 
                       (enc.enc pk enc.Mzero (Ring.Finv rStar))) &&
@@ -434,7 +437,7 @@ Module wikSigma (G G1 G2 : GroupSig)(Ring : RingSig)(Field : FieldSig)
     let w4 := r.1.2 in 
     let wHat := r.2 in
 
-    let t3 := EPC (1+N) g hs w' w3 in 
+    let t3 := EPC g hs w' w3 in
     let t4 := G1.Gdot (MoC.VG_prod (MoC.VG_Pexp e' w')) (enc.enc pk enc.Mzero (Ring.Finv w4)) in
     let tHat1 := PC g h (Vnth w' index0) (Vnth wHat index0) in
     let tHat2 := (Vmap2 (fun x y => x y)
@@ -497,7 +500,7 @@ Module wikSigma (G G1 G2 : GroupSig)(Ring : RingSig)(Field : FieldSig)
     let s' := t.1.1.1 in
 
     (* t3 o a^e = EPC s' s3 *) 
-    Gbool_eq (t3 o a^e) (EPC (1+N) g hs s' s3) && 
+    Gbool_eq (t3 o a^e) (EPC g hs s' s3) &&
     (* t4 o b^e = Prod e'^s' o Enc Gone s4*) 
     G1.Gbool_eq (G1.Gdot t4 (VS1.op b e)) 
       (G1.Gdot (MoC.VG_prod (MoC.VG_Pexp e' s')) (enc.enc pk enc.Mzero (Ring.Finv s4))) &&
@@ -571,7 +574,7 @@ Module wikSigma (G G1 G2 : GroupSig)(Ring : RingSig)(Field : FieldSig)
     let sHat := z.2 in 
     let s' := z.1.1.1 in
 
-    let t3 := EPC (1+N) g hs s' s3 o - a^e in 
+    let t3 := EPC g hs s' s3 o - a^e in
     let t4 := G1.Gdot (G1.Gdot (MoC.VG_prod (MoC.VG_Pexp e' s')) (enc.enc pk enc.Mzero (Ring.Finv s4))) 
       (G1.Ginv (VS1.op b e)) in
     let tHat1 := PC g h(Vnth s' index0) (Vnth sHat index0)
@@ -619,9 +622,11 @@ Module wikSigma (G G1 G2 : GroupSig)(Ring : RingSig)(Field : FieldSig)
   Proof.
     pose G1.module_abegrp. pose G2.module_abegrp. pose enc.M_abgrp.
     unfold u'Form in *. 
-    assert (AbeGroup F Fadd 0 Fbool_eq Finv).  apply (field_additive_abegrp (F)(Fadd)(Fzero)
+    assert (AbeGroup F Fadd 0 Fbool_eq (fun a b => negb (Fbool_eq a b)) Finv).  
+    apply (field_additive_abegrp (F)(Fadd)(Fzero)
     (Fbool_eq) (Fsub)(Finv)(Fmul) (Fone)(FmulInv)(Fdiv)). apply Field.vs_field.
-    apply Field.F_bool_eq_corr. apply Field.F_bool_neq_corr.
+    apply Field.F_bool_eq_corr. apply Field.F_bool_eq_sym. 
+    apply Field.F_bool_neq_corr.
     destruct Field.vs_field. destruct F_R.   
      constructor. constructor. constructor. apply H. 
     + intros. trivial.

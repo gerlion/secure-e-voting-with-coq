@@ -14,10 +14,12 @@ Module Type DualGroupSig (Group : GroupSig) <: GroupSig.
   Definition G := prod G G.
   Definition Gdot (a b : G) : G := (Gdot a.1 b.1, Gdot a.2 b.2).
   Definition Gone := (Gone, Gone).
+  Definition Ggen := (Ggen, Ggen).
   Definition Gbool_eq (a b : G) := Gbool_eq a.1 b.1 && Gbool_eq a.2 b.2.
+  Definition Gdisjoint (a b : G) := Gdisjoint a.1 b.1 && Gdisjoint a.2 b.2.
   Definition Ginv a := (Ginv a.1, Ginv a.2).
 
-  Lemma module_abegrp : AbeGroup G Gdot Gone Gbool_eq Ginv.
+  Lemma module_abegrp : AbeGroup G Gdot Gone Gbool_eq Gdisjoint Ginv.
   Proof.
     (** We need to prove the correctnes of the extended group*)
     pose module_abegrp. constructor. constructor. constructor. intros.
@@ -34,6 +36,9 @@ Module Type DualGroupSig (Group : GroupSig) <: GroupSig.
     destruct a0. simpl in *. rewrite H1. rewrite H2. trivial.
     intro. apply andb_true_iff. split. apply bool_eq_corr.
     rewrite H. trivial. apply bool_eq_corr. rewrite H. 
+    trivial.
+    (* bool_eq_sym *)
+    intros. unfold Gbool_eq. rewrite bool_eq_sym. rewrite (bool_eq_sym a0.2).
     trivial.
     (*bool_neq_corr*)
     intros.  refine (conj _ _).  intros. 
@@ -55,7 +60,13 @@ Module Type DualGroupSig (Group : GroupSig) <: GroupSig.
     destruct a0. destruct b. simpl in *. rewrite H3 in H. 
     rewrite H2 in H. assert False. apply H. trivial. contradiction.
     intro. trivial.
-
+    (* Disjoint sim *)
+    intros. unfold Gdisjoint. rewrite disjoint_sym. rewrite (disjoint_sym a0.2).
+    trivial.
+    (* Disjoint corr *)
+    intros. unfold Gdisjoint in H. apply andb_true_iff in H.
+    destruct H. apply disjoint_corr in H. unfold not in *. intros. 
+    apply H. rewrite H1. trivial. 
     (* inv_left *)
     intros. unfold Gdot. simpl. rewrite <- inv_left. rewrite <- inv_left.
     trivial. intros. unfold Gdot. simpl.  rewrite <- inv_right.
@@ -73,10 +84,12 @@ Module DualGroupIns (Group : GroupSig) <: DualGroupSig Group.
   Definition G := prod G G.
   Definition Gdot (a b : G) : G := (Gdot a.1 b.1, Gdot a.2 b.2).
   Definition Gone := (Gone, Gone).
+  Definition Ggen := (Ggen, Ggen).
   Definition Gbool_eq (a b : G) := Gbool_eq a.1 b.1 && Gbool_eq a.2 b.2.
+  Definition Gdisjoint (a b : G) := Gdisjoint a.1 b.1 && Gdisjoint a.2 b.2.
   Definition Ginv a := (Ginv a.1, Ginv a.2).
 
-  Lemma module_abegrp : AbeGroup G Gdot Gone Gbool_eq Ginv.
+  Lemma module_abegrp : AbeGroup G Gdot Gone Gbool_eq Gdisjoint Ginv.
   Proof.
     (** We need to prove the correctnes of the extended group*)
     pose module_abegrp. constructor. constructor. constructor. intros.
@@ -93,6 +106,9 @@ Module DualGroupIns (Group : GroupSig) <: DualGroupSig Group.
     destruct a0. simpl in *. rewrite H1. rewrite H2. trivial.
     intro. apply andb_true_iff. split. apply bool_eq_corr.
     rewrite H. trivial. apply bool_eq_corr. rewrite H. 
+    trivial.
+    (* bool_eq_sym *)
+    intros. intros. unfold Gbool_eq. rewrite bool_eq_sym. rewrite (bool_eq_sym a0.2).
     trivial.
     (*bool_neq_corr*)
     intros.  refine (conj _ _).  intros. 
@@ -114,6 +130,13 @@ Module DualGroupIns (Group : GroupSig) <: DualGroupSig Group.
     destruct a0. destruct b. simpl in *. rewrite H3 in H. 
     rewrite H2 in H. assert False. apply H. trivial. contradiction.
     intro. trivial.
+    (* Disjoint sim *)
+    intros. unfold Gdisjoint. rewrite disjoint_sym. rewrite (disjoint_sym a0.2).
+    trivial.
+    (* Disjoint corr *)
+    intros. unfold Gdisjoint in H. apply andb_true_iff in H.
+    destruct H. apply disjoint_corr in H. unfold not in *. intros. 
+    apply H. rewrite H1. trivial.
 
     (* inv_left *)
     intros. unfold Gdot. simpl. rewrite <- inv_left. rewrite <- inv_left.

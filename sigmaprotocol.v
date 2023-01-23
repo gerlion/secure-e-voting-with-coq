@@ -85,7 +85,7 @@ Notation "sigma .extractor" := (Sigma.extractor sigma) (at level 0).
 (** A sigmaProtocol for a relation Rel *)
 Class SigmaProtocol (Sig : Sigma.form E) := {
 
-  e_abgrp :> AbeGroup E Sig.add Sig.zero Sig.bool_eq Sig.inv;
+  e_abgrp :> AbeGroup E Sig.add Sig.zero Sig.bool_eq Sig.disjoint Sig.inv;
   
   (** We require the functions do not modifiy the previous transcript *)
   pres_p0 : forall (s : Sig.S)(r : Sig.R)(w : Sig.W), (Sig.P0 s r w) = (s,(Sig.P0 s r w).2);
@@ -135,7 +135,6 @@ Class SigmaProtocol (Sig : Sigma.form E) := {
   simulator_correct : forall (s : Sig.S)(t : Sig.T)(e : E),
     Sig.V1(Sig.simulator s t e) = true;
 }.
-  
 
 (* To apply the equality composition we require a few extra properties  *)
 Class CompSigmaProtocol (Sig : Sigma.form E)
@@ -991,6 +990,8 @@ Proof.
   intro. apply andb_true_iff. split. apply bool_eq_corr.
   rewrite H1. trivial. apply bool_eq_corr. rewrite H1. 
   trivial.
+  (* bool_eq_sym *)
+  intros. rewrite bool_eq_sym. rewrite (bool_eq_sym a.2). trivial.
   (*bool_neq_corr*)
   intros.  refine (conj _ _).  intros. 
   apply andb_false_iff in H1.
@@ -1010,6 +1011,11 @@ Proof.
   assert (a.1 = b.1). apply bool_eq_corr. apply H2.
   destruct a. destruct b. simpl in *. rewrite H4 in H1. 
   rewrite H5 in H1. assert False. apply H1. trivial. contradiction. intro. trivial.
+  (* disjoint sym *)
+  intros. rewrite disjoint_sym. rewrite (disjoint_sym a.2). trivial.
+  (* disjoint corr *)
+  intros. apply andb_true_iff in H1. destruct H1. apply disjoint_corr in H1.
+  unfold not in *. intros. apply H1. rewrite H3. trivial. 
 
   (* inv_left *)
   intros. simpl. rewrite <- inv_left. rewrite <- inv_left.

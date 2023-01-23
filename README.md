@@ -6,6 +6,7 @@ The following papers are associated with the code here:
 * the S&P 2021 paper "Did you mix me? Formally Verifying Verifiable Mix Nets in Electronic Voting" by Thomas Haines, Rajeev Gore and Bhavesh Sharma.
 * the NordSec 2020 paper "Machine-checking the universal verifiability of ElectionGuard" by Thomas Haines, Rajeev Gore and Jack Stodart
 * the NordSec 2020 paper "Efficient mixing of arbitrary ballots with everlasting privacy: How to verifiably mix the PPATC scheme" by Kristian Gjøsteen, Thomas Haines and Morten Solberg 
+* the USENIX Security 2023 paper "Machine-checking Multi-Round Proofs of Shuffle: Terelius-Wikstrom and Bayer-Groth" by Thomas Haines, Rajeev Gore and Mukesh Tiwari.
 
 # Summary
 
@@ -20,14 +21,23 @@ Please read the corresponding papers for discussion of the limitations.
 
 Both the Coq and OCaml code come with makefiles 
 
+## Note: 
+This is not the development repo for the ongoing work; we also do not comprehensively maintain some of the older works contained here.  Please contact 
+Thomas Haines (thomas.haines@anu.edu.au) with any questions or for
+the latest version.
+
+
+
 # Dependencies 
-The Coq Proof Assistant, version 8.11.2  
-OCaml, version 4.10.0  
+The Coq Proof Assistant, version 8.16.1  
+OCaml, version 4.13.0  
 coq-color
 coq-prime
+coq-mathcomp
 zarith,batteries,yojson,atdgen,ppx_deriving
+
 # Installation instructions
-(These instructions were tested on a clean Ubuntu-20.04.1 (64 bit) install inside VirtualBox)
+(These instructions were tested on a clean Ubuntu-22.04 (64 bit) install inside VirtualBox)
 ## Installing opam 2
 sudo add-apt-repository ppa:avsm/ppa
 sudo apt update
@@ -35,35 +45,41 @@ sudo apt install opam
 ## Init opam
 sudo apt-get install m4
 sudo apt install libgmp-dev
-opam init --comp 4.10.0
+opam init --comp 4.13.0
 eval $(opam env)
 opam update
 ## Install coq
-opam pin add coq 8.11.2
+opam pin add coq 8.16.1
 opam repo add coq-released https://coq.inria.fr/opam/released
 opam update
 opam install coq-color
 opam install coq-coqprime
+opam install coq-mathcomp-ssreflect
+opam install coq-mathcomp-algebra
 ## Install other dep
 opam install zarith
-opam install batteries
-opam install yojson
-opam install atdgen
-opam install ppx_deriving
+opam install batteries 
+opam install yojson 
+opam install atdgen 
+opam install ppx_deriving 
 
 # Coq code
+## Mix nets
+Running "make BayerGroth" in the main folder will prompt Coq to check the proofs for Terelius-Wikstrom and Bayer-Groth
+
+We have currently admitted the Theorem 1 from 
+Proofs of Restricted Shuffles, which encodes sufficent
+conditions for a Matrix to be a permutation,
+this proof is very short in standard mathematics 
+but a constructive proof is more involved.
+
 ## Helios
 Running make helios.vo will prompt coq to check the proofs for helios
 Running make ExtractionHelios.vo will prompt Coq to extract the libraries
 (Both checking and extracting check the proofs of primality which is time consuming)
-## Mix nets
-Running make wikstromMatrix.vo will prompt Coq to check the proofs
-Running make ExtractionMixnet.vo will prompt Coq to extract the libraries
-(Note, again, that extraction checks the proof of primality for the numbers used in the implementation and is therefore time consuming (1hr). The reader may wish to simply look at the already extracted code)
+
 ## ElectionGuard
 Running make makeElectionGuard will prompt Coq to check the proofs
-## PPATC
-Running make PPATC.vo will prompt Coq to check the proofs
 ## Runtime optimisations
 We suggest the following modification from what is 
 directly extracted from Coq.
@@ -74,41 +90,10 @@ directly extracted from Coq.
     but this is less essenital.
 
 # OCaml Code
-This repository comes preloaded with three transcripts.  
-One from Helios, one from CHVote mixnet, and one from Verificatum mixnet.
-Anyone can also download these open source projects and generate additional transcripts.
-The transcripts are embedded in the main.ml files in the respective folders.  
 
-The folders are setup with the appropriate extracted code already included but this can 
-be substituted with freshly extracted code by following the instructions provided.
-## CHVote
-Copy lib.ml into the OCamlVerificatum folder.
-Change the primes as follows
-1. replace "let p = ..." with "let p = Big.of_string "11""
-2. replace "let q = ..." with "let q =  Big.of_string "5""
-
-To compile 
-    make
-To run 
-    make run
-## Verificatum
-Copy lib.ml into the OCamlVerificatum folder.
-Change the primes as follows
-1. replace "let p = ..." with "let p = Big.of_string "8095455969267383450536091939011431888343052744233774808515030596297626946131583007491317242326621464546135030140184007406503191036604066436734360427237223""
-2. replace "let q = ..." with "let q =  Big.of_string "4047727984633691725268045969505715944171526372116887404257515298148813473065791503745658621163310732273067515070092003703251595518302033218367180213618611""
-Change the number of expected ciphertexts as follows
-3. add the helper function intToNat "let rec intToNat = (fun i ->
-  match i with
-  | 0 -> O
-  | x -> S (intToNat (x-1))
-)
-"
-4. replace "let coq_N = S O" with "let coq_N = intToNat 99"
-
-To compile 
-    make
-To run 
-    make run
+## Mix nets
+Running "make compile" in BayerGroth/Code will prompt OCaml to compile
+Running "make run" will verify the text vector from SwissPost
 ## Helios
 Copy lib.ml into the OCaml folder
 Running make compile will prompt OCaml to compile  
@@ -117,10 +102,6 @@ Running make run will will verify the election data for Helios IACR 2018
 Go to ElectionGuard/OCaml
 Running make compile will prompt OCaml to compile  
 Running make run will will verify the test election data 
-## Note: 
-This is not the development repo for the ongoing work.  Place contact 
-Thomas Haines (thomas.haines@ntnu.no) with any questions or for
-the latest version.
 
 ## External Contributors :
 

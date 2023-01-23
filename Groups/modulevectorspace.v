@@ -20,6 +20,7 @@ Module Type VectorSpaceModuleSameGroup (Group : GroupSig)(Ring : RingSig)
   Axiom RopInv : forall a, op3 a (Field.Finv Fone) = Ring.Finv a.
   Axiom RopInvDis : forall a b, op3 (Ring.Finv a) b = Ring.Finv (op3 a b).
     Axiom RopFZero : forall x, op3 x Fzero = Ring.Fzero.
+    Axiom RopFOne : forall x, op3 x Fone = x.
     Axiom RopRZero : forall x, op3 Ring.Fzero x = Ring.Fzero.
     Axiom RopDistRadd : forall x y z, op3 (Ring.Fadd x y) z = 
       Ring.Fadd (op3 x z) (op3 y z).
@@ -48,6 +49,10 @@ Module Type VectorSpaceModuleSameGroupIns (Group : GroupSig)
     intros. unfold op3. field; auto.
   Qed.
   Lemma RopFZero : forall x, op3 x Fzero = Field.Fzero.
+  Proof. 
+    intros. unfold op3. field; auto.
+  Qed.
+  Lemma RopFOne : forall x, op3 x Fone = x.
   Proof. 
     intros. unfold op3. field; auto.
   Qed.
@@ -95,6 +100,10 @@ Module VectorSpaceModuleSameGroupInsIns (Group : GroupSig)
     intros. unfold op3. field; auto.
   Qed.
   Lemma RopFZero : forall x, op3 x Fzero = Field.Fzero.
+  Proof. 
+    intros. unfold op3. field; auto.
+  Qed.
+  Lemma RopFOne : forall x, op3 x Fone = x.
   Proof. 
     intros. unfold op3. field; auto.
   Qed.
